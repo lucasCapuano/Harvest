@@ -1,9 +1,11 @@
 "use client";
 
 import { useTheme } from "next-themes";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { HarvestLogo } from "@/components/harvest-logo";
 import { Save, Sun, Moon } from "lucide-react";
 
 export function Header() {
@@ -12,7 +14,9 @@ export function Header() {
   return (
     <header className="flex h-14 shrink-0 items-center justify-between border-b bg-card px-6">
       {/* Left: Logo */}
-      <span className="text-lg font-bold tracking-tight">Harvest</span>
+      <Link href="/applications">
+        <HarvestLogo className="h-5 w-auto" />
+      </Link>
 
       {/* Right: Actions */}
       <div className="flex items-center gap-3">
@@ -34,7 +38,7 @@ export function Header() {
         <Button variant="ghost" size="sm" className="text-muted-foreground">
           Abandonner
         </Button>
-        <Button size="sm">
+        <Button size="sm" className="bg-[#0052CC] text-white shadow-md shadow-[#0052CC]/30 transition-all hover:bg-[#0052CC]/90 hover:shadow-lg hover:shadow-[#0052CC]/40">
           Créer le dossier
         </Button>
       </div>
