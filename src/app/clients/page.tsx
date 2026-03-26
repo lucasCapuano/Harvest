@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
+import { useState, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { AppLayout } from "@/components/app-layout";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Table,
   TableBody,
@@ -16,6 +17,19 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
   Search,
   MoreHorizontal,
   Mail,
@@ -23,141 +37,16 @@ import {
   Plus,
   LayoutGrid,
   List,
+  Pencil,
+  Trash2,
+  FileText,
+  Upload,
+  Mic,
+  Loader2,
+  CheckCircle2,
+  File,
 } from "lucide-react";
-
-interface Client {
-  id: number;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  type: "Particulier" | "Professionnel";
-  status: "Actif" | "Prospect" | "Inactif";
-  patrimoine: string;
-}
-
-const clients: Client[] = [
-  {
-    id: 1,
-    firstName: "Jean-Pierre",
-    lastName: "Dupont",
-    email: "jp.dupont@email.fr",
-    phone: "06 12 34 56 78",
-    type: "Particulier",
-    status: "Actif",
-    patrimoine: "1 250 000 €",
-  },
-  {
-    id: 2,
-    firstName: "Marie",
-    lastName: "Laurent",
-    email: "m.laurent@email.fr",
-    phone: "06 23 45 67 89",
-    type: "Particulier",
-    status: "Actif",
-    patrimoine: "890 000 €",
-  },
-  {
-    id: 3,
-    firstName: "Philippe",
-    lastName: "Martin",
-    email: "p.martin@entreprise.fr",
-    phone: "06 34 56 78 90",
-    type: "Professionnel",
-    status: "Actif",
-    patrimoine: "3 400 000 €",
-  },
-  {
-    id: 4,
-    firstName: "Sophie",
-    lastName: "Bernard",
-    email: "s.bernard@email.fr",
-    phone: "06 45 67 89 01",
-    type: "Particulier",
-    status: "Prospect",
-    patrimoine: "520 000 €",
-  },
-  {
-    id: 5,
-    firstName: "Antoine",
-    lastName: "Moreau",
-    email: "a.moreau@cabinet.fr",
-    phone: "06 56 78 90 12",
-    type: "Professionnel",
-    status: "Actif",
-    patrimoine: "2 100 000 €",
-  },
-  {
-    id: 6,
-    firstName: "Claire",
-    lastName: "Petit",
-    email: "c.petit@email.fr",
-    phone: "06 67 89 01 23",
-    type: "Particulier",
-    status: "Inactif",
-    patrimoine: "310 000 €",
-  },
-  {
-    id: 7,
-    firstName: "François",
-    lastName: "Robert",
-    email: "f.robert@email.fr",
-    phone: "06 78 90 12 34",
-    type: "Particulier",
-    status: "Actif",
-    patrimoine: "1 780 000 €",
-  },
-  {
-    id: 8,
-    firstName: "Isabelle",
-    lastName: "Durand",
-    email: "i.durand@groupe.fr",
-    phone: "06 89 01 23 45",
-    type: "Professionnel",
-    status: "Prospect",
-    patrimoine: "4 500 000 €",
-  },
-  {
-    id: 9,
-    firstName: "Nicolas",
-    lastName: "Leroy",
-    email: "n.leroy@email.fr",
-    phone: "06 90 12 34 56",
-    type: "Particulier",
-    status: "Actif",
-    patrimoine: "670 000 €",
-  },
-  {
-    id: 10,
-    firstName: "Catherine",
-    lastName: "Roux",
-    email: "c.roux@email.fr",
-    phone: "06 01 23 45 67",
-    type: "Particulier",
-    status: "Actif",
-    patrimoine: "950 000 €",
-  },
-  {
-    id: 11,
-    firstName: "Éric",
-    lastName: "Girard",
-    email: "e.girard@entreprise.fr",
-    phone: "06 11 22 33 44",
-    type: "Professionnel",
-    status: "Actif",
-    patrimoine: "5 200 000 €",
-  },
-  {
-    id: 12,
-    firstName: "Valérie",
-    lastName: "Lefebvre",
-    email: "v.lefebvre@email.fr",
-    phone: "06 55 66 77 88",
-    type: "Particulier",
-    status: "Prospect",
-    patrimoine: "420 000 €",
-  },
-];
+import { useClients, type Client, computePatrimoineNet, formatPatrimoine } from "@/lib/clients-store";
 
 function statusColor(status: Client["status"]) {
   switch (status) {
@@ -170,9 +59,122 @@ function statusColor(status: Client["status"]) {
   }
 }
 
-function ClientCard({ client }: { client: Client }) {
+function ClientActions({ client }: { client: Client }) {
+  const { updateClient, deleteClient } = useClients();
+  const [editOpen, setEditOpen] = useState(false);
+  const [popoverOpen, setPopoverOpen] = useState(false);
+  const [editData, setEditData] = useState({
+    firstName: client.firstName,
+    lastName: client.lastName,
+    email: client.email,
+    phone: client.phone,
+  });
+
+  const handleEdit = () => {
+    setEditData({
+      firstName: client.firstName,
+      lastName: client.lastName,
+      email: client.email,
+      phone: client.phone,
+    });
+    setPopoverOpen(false);
+    setEditOpen(true);
+  };
+
+  const handleSave = () => {
+    updateClient(client.id, editData);
+    setEditOpen(false);
+  };
+
+  const handleDelete = () => {
+    setPopoverOpen(false);
+    deleteClient(client.id);
+  };
+
   return (
-    <Card className="gap-4 p-5">
+    <>
+      <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+        <PopoverTrigger
+          render={
+            <Button variant="ghost" size="icon-sm">
+              <MoreHorizontal className="size-4" />
+            </Button>
+          }
+        />
+        <PopoverContent align="end" className="w-36 p-1 gap-0">
+          <button
+            onClick={handleEdit}
+            className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted transition-colors"
+          >
+            <Pencil className="size-3.5" />
+            Modifier
+          </button>
+          <button
+            onClick={handleDelete}
+            className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+          >
+            <Trash2 className="size-3.5" />
+            Supprimer
+          </button>
+        </PopoverContent>
+      </Popover>
+
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Modifier le client</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor={`fn-${client.id}`}>Prénom</Label>
+                <Input
+                  id={`fn-${client.id}`}
+                  value={editData.firstName}
+                  onChange={(e) => setEditData((d) => ({ ...d, firstName: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor={`ln-${client.id}`}>Nom</Label>
+                <Input
+                  id={`ln-${client.id}`}
+                  value={editData.lastName}
+                  onChange={(e) => setEditData((d) => ({ ...d, lastName: e.target.value }))}
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor={`em-${client.id}`}>Email</Label>
+              <Input
+                id={`em-${client.id}`}
+                type="email"
+                value={editData.email}
+                onChange={(e) => setEditData((d) => ({ ...d, email: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor={`ph-${client.id}`}>Téléphone</Label>
+              <Input
+                id={`ph-${client.id}`}
+                type="tel"
+                value={editData.phone}
+                onChange={(e) => setEditData((d) => ({ ...d, phone: e.target.value }))}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditOpen(false)}>Annuler</Button>
+            <Button className="bg-[#0052CC] text-white transition-all hover:bg-[#0052CC]/90" onClick={handleSave}>Enregistrer</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
+function ClientCard({ client, onClick }: { client: Client; onClick: () => void }) {
+  return (
+    <Card className="gap-4 p-5 cursor-pointer transition-colors hover:bg-muted/30" onClick={onClick}>
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
           <div className="flex size-10 items-center justify-center rounded-full bg-muted text-sm font-semibold">
@@ -186,9 +188,7 @@ function ClientCard({ client }: { client: Client }) {
             <p className="text-xs text-muted-foreground">{client.type}</p>
           </div>
         </div>
-        <Button variant="ghost" size="icon-sm">
-          <MoreHorizontal className="size-4" />
-        </Button>
+        <ClientActions client={client} />
       </div>
 
       <div className="flex flex-col gap-1.5">
@@ -207,7 +207,7 @@ function ClientCard({ client }: { client: Client }) {
           {client.status}
         </Badge>
         <span className="text-sm font-semibold text-foreground">
-          {client.patrimoine}
+          {formatPatrimoine(computePatrimoineNet(client.formData))}
         </span>
       </div>
     </Card>
@@ -216,6 +216,44 @@ function ClientCard({ client }: { client: Client }) {
 
 export default function ClientsPage() {
   const [view, setView] = useState<"table" | "cards">("table");
+  const [newClientOpen, setNewClientOpen] = useState(false);
+  const [transcriptOpen, setTranscriptOpen] = useState(false);
+  const [transcriptFile, setTranscriptFile] = useState<File | null>(null);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analysisDone, setAnalysisDone] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { clients } = useClients();
+  const router = useRouter();
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) setTranscriptFile(file);
+  };
+
+  const handleAnalyze = () => {
+    if (!transcriptFile) return;
+    setAnalyzing(true);
+    // Store file name in sessionStorage so the form page can read it
+    sessionStorage.setItem("transcriptMode", "true");
+    setTimeout(() => {
+      setAnalyzing(false);
+      setAnalysisDone(true);
+      setTimeout(() => {
+        setTranscriptOpen(false);
+        setTranscriptFile(null);
+        setAnalysisDone(false);
+        router.push("/?mode=transcript");
+      }, 800);
+    }, 2500);
+  };
+
+  const openTranscriptFlow = () => {
+    setNewClientOpen(false);
+    setTranscriptFile(null);
+    setAnalyzing(false);
+    setAnalysisDone(false);
+    setTranscriptOpen(true);
+  };
 
   return (
     <AppLayout title="Clients">
@@ -248,15 +286,71 @@ export default function ClientsPage() {
               <LayoutGrid className="size-4" />
             </button>
           </div>
-          <Link
-            href="/"
-            className="inline-flex h-7 w-fit shrink-0 items-center justify-center gap-1.5 rounded-[min(var(--radius-md),12px)] bg-[#0052CC] px-2.5 text-[0.8rem] font-medium text-white shadow-md shadow-[#0052CC]/30 transition-all hover:bg-[#0052CC]/90 hover:shadow-lg hover:shadow-[#0052CC]/40"
+          <button
+            onClick={() => setNewClientOpen(true)}
+            className="inline-flex h-7 w-fit shrink-0 items-center justify-center gap-1.5 rounded-[min(var(--radius-md),12px)] bg-[#0052CC] px-2.5 text-[0.8rem] font-medium text-white transition-all hover:bg-[#0052CC]/90"
           >
             <Plus className="size-3.5" />
             Nouveau client
-          </Link>
+          </button>
         </div>
       </div>
+
+      {/* New Client Dialog */}
+      <Dialog open={newClientOpen} onOpenChange={setNewClientOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Nouveau client</DialogTitle>
+            <DialogDescription>
+              Choisissez comment créer le dossier client.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-3 py-2">
+            <button
+              onClick={() => { setNewClientOpen(false); router.push("/"); }}
+              className="flex items-start gap-4 rounded-lg border border-border p-4 text-left transition-colors hover:bg-muted"
+            >
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[#0052CC]/10 text-[#0052CC]">
+                <FileText className="size-5" />
+              </div>
+              <div>
+                <p className="text-sm font-medium">Remplir manuellement</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Saisissez les informations du client étape par étape.
+                </p>
+              </div>
+            </button>
+            <button
+              onClick={openTranscriptFlow}
+              className="flex items-start gap-4 rounded-lg border border-border p-4 text-left transition-colors hover:bg-muted"
+            >
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-amber-500/10 text-amber-500">
+                <Upload className="size-5" />
+              </div>
+              <div>
+                <p className="text-sm font-medium">Importer un transcript</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Importez le compte-rendu d&apos;un rendez-vous pour pré-remplir le formulaire automatiquement.
+                </p>
+              </div>
+            </button>
+            <button
+              onClick={() => { setNewClientOpen(false); router.push("/?mode=live"); }}
+              className="flex items-start gap-4 rounded-lg border border-border p-4 text-left transition-colors hover:bg-muted"
+            >
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-green-500/10 text-green-500">
+                <Mic className="size-5" />
+              </div>
+              <div>
+                <p className="text-sm font-medium">Rendez-vous en direct</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Lancez un entretien exploratoire en direct. L&apos;IA analyse la conversation et remplit le dossier en temps réel.
+                </p>
+              </div>
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Stats */}
       <div className="mb-6 flex gap-4">
@@ -278,14 +372,17 @@ export default function ClientsPage() {
         </Card>
         <Card className="flex-1 gap-1 p-4">
           <p className="text-xs text-muted-foreground">Patrimoine total</p>
-          <p className="text-2xl font-semibold text-foreground">21,99 M€</p>
+          <p className="text-2xl font-semibold text-foreground">
+            {formatPatrimoine(clients.reduce((sum, c) => sum + computePatrimoineNet(c.formData), 0))}
+          </p>
         </Card>
       </div>
 
       {/* Table View */}
       {view === "table" && (
-        <Card className="px-4 py-0">
-          <Table>
+        <div className="min-h-0 flex-1 overflow-auto">
+          <Card className="px-4 py-4 border border-border">
+            <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Client</TableHead>
@@ -299,7 +396,7 @@ export default function ClientsPage() {
             </TableHeader>
             <TableBody>
               {clients.map((client) => (
-                <TableRow key={client.id}>
+                <TableRow key={client.id} className="cursor-pointer" onClick={() => router.push(`/clients/${client.id}`)}>
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold">
@@ -331,28 +428,117 @@ export default function ClientsPage() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right font-semibold">
-                    {client.patrimoine}
+                    {formatPatrimoine(computePatrimoineNet(client.formData))}
                   </TableCell>
-                  <TableCell>
-                    <Button variant="ghost" size="icon-sm">
-                      <MoreHorizontal className="size-4" />
-                    </Button>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    <ClientActions client={client} />
                   </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         </Card>
+        </div>
       )}
 
       {/* Card Grid View */}
       {view === "cards" && (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="min-h-0 flex-1 overflow-auto">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {clients.map((client) => (
-            <ClientCard key={client.id} client={client} />
+            <ClientCard key={client.id} client={client} onClick={() => router.push(`/clients/${client.id}`)} />
           ))}
+          </div>
         </div>
       )}
+
+      {/* Transcript Upload Dialog */}
+      <Dialog open={transcriptOpen} onOpenChange={(open) => { if (!analyzing) setTranscriptOpen(open); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Importer un transcript</DialogTitle>
+            <DialogDescription>
+              Sélectionnez le fichier du compte-rendu de rendez-vous (.txt, .doc, .docx).
+            </DialogDescription>
+          </DialogHeader>
+
+          {!analyzing && !analysisDone && (
+            <div className="space-y-4 py-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".txt,.doc,.docx,.pdf"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="flex w-full flex-col items-center gap-3 rounded-lg border-2 border-dashed border-border p-8 text-center transition-colors hover:border-[#0052CC]/50 hover:bg-muted/50"
+              >
+                <div className="flex size-12 items-center justify-center rounded-full bg-amber-500/10 text-amber-500">
+                  <Upload className="size-5" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">
+                    {transcriptFile ? transcriptFile.name : "Cliquez pour sélectionner un fichier"}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Formats acceptés : .txt, .doc, .docx, .pdf
+                  </p>
+                </div>
+              </button>
+
+              {transcriptFile && (
+                <div className="flex items-center gap-3 rounded-lg border border-border bg-muted/30 p-3">
+                  <File className="size-4 text-muted-foreground" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{transcriptFile.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {(transcriptFile.size / 1024).toFixed(1)} Ko
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setTranscriptOpen(false)}>Annuler</Button>
+                <Button
+                  className="bg-[#0052CC] text-white transition-all hover:bg-[#0052CC]/90"
+                  disabled={!transcriptFile}
+                  onClick={handleAnalyze}
+                >
+                  Analyser le document
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+
+          {analyzing && (
+            <div className="flex flex-col items-center gap-4 py-8">
+              <Loader2 className="size-8 animate-spin text-[#0052CC]" />
+              <div className="text-center">
+                <p className="text-sm font-medium">Analyse en cours…</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Extraction des informations du transcript
+                </p>
+              </div>
+            </div>
+          )}
+
+          {analysisDone && (
+            <div className="flex flex-col items-center gap-4 py-8">
+              <CheckCircle2 className="size-8 text-green-500" />
+              <div className="text-center">
+                <p className="text-sm font-medium">Analyse terminée</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Redirection vers le formulaire pré-rempli…
+                </p>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 }

@@ -118,7 +118,7 @@ function EssentialCard({ app }: { app: AppCard }) {
           {app.action.variant === "default" ? (
             <Button
               size="sm"
-              className="gap-1.5 bg-[#0052CC] text-white shadow-md shadow-[#0052CC]/30 transition-all hover:bg-[#0052CC]/90 hover:shadow-lg hover:shadow-[#0052CC]/40"
+              className="gap-1.5 bg-[#0052CC] text-white transition-all hover:bg-[#0052CC]/90"
             >
               <ExternalLink className="size-3.5" />
               {app.action.label}

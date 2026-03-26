@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
+import { useWizard } from "@/lib/wizard-context";
 import { AccordionCategory, type FieldConfig, type RowData } from "@/components/accordion-category";
 import { StepNavigation } from "@/components/step-navigation";
 import { StepHeader } from "@/components/step-header";
@@ -19,8 +20,19 @@ import { CheckCircle2, ArrowLeft } from "lucide-react";
 let nextId = 300;
 function genId() { return String(nextId++); }
 
-function useCategoryRows(initial?: RowData[]) {
+function useCategoryRows(initial?: RowData[], liveOverride?: unknown[]) {
   const [rows, setRows] = useState<RowData[]>(() => initial ?? [{ id: genId() }]);
+  const liveLen = liveOverride?.length ?? 0;
+  const prevLiveLen = useRef(0);
+
+  useEffect(() => {
+    if (!liveOverride || liveLen === 0) return;
+    if (liveLen !== prevLiveLen.current) {
+      prevLiveLen.current = liveLen;
+      setRows(liveOverride as RowData[]);
+    }
+  }, [liveLen, liveOverride]);
+
   const add = useCallback(() => setRows((p) => [...p, { id: genId() }]), []);
   const remove = useCallback((id: string) => setRows((p) => p.filter((r) => r.id !== id)), []);
   const update = useCallback((id: string, key: string, value: string) => {
@@ -36,14 +48,23 @@ const fields: FieldConfig[] = [
 ];
 
 export function ChargesStep() {
-  const generales = useCategoryRows([
-    { id: "c1", nature: "Impôt sur le revenu", libelle: "IR 2025", montant: "18 500" },
-    { id: "c2", nature: "Taxe foncière", libelle: "TF Appartement Paris", montant: "2 800" },
-    { id: "c3", nature: "Taxe foncière", libelle: "TF Maison Deauville", montant: "1 600" },
-  ]);
-  const deductibles = useCategoryRows([
-    { id: "c4", nature: "Pension alimentaire", libelle: "Pension ex-conjoint", montant: "7 200" },
-  ]);
+  const { formData, liveMode } = useWizard();
+  const ctxCharges = liveMode ? (formData.charges as any) : null;
+
+  const generales = useCategoryRows(
+    liveMode ? undefined : [
+      { id: "c1", nature: "Impôt sur le revenu", libelle: "IR 2025", montant: "18 500" },
+      { id: "c2", nature: "Taxe foncière", libelle: "TF Appartement Paris", montant: "2 800" },
+      { id: "c3", nature: "Taxe foncière", libelle: "TF Maison Deauville", montant: "1 600" },
+    ],
+    ctxCharges?.chargesGenerales
+  );
+  const deductibles = useCategoryRows(
+    liveMode ? undefined : [
+      { id: "c4", nature: "Pension alimentaire", libelle: "Pension ex-conjoint", montant: "7 200" },
+    ],
+    ctxCharges?.chargesDeductibles
+  );
   const [showConfirm, setShowConfirm] = useState(false);
 
   return (

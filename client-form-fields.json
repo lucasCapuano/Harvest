@@ -1,0 +1,677 @@
+{
+  "steps": [
+    {
+      "id": "situation-personnelle",
+      "label": "Situation personnelle",
+      "sections": [
+        {
+          "name": "État civil",
+          "fields": [
+            {
+              "path": "situationPersonnelle.civilite",
+              "label": "Civilité",
+              "type": "toggle-group",
+              "options": ["Monsieur", "Madame", "Mademoiselle"]
+            },
+            {
+              "path": "situationPersonnelle.nom",
+              "label": "Nom",
+              "type": "text"
+            },
+            {
+              "path": "situationPersonnelle.prenom",
+              "label": "Prénom",
+              "type": "text"
+            },
+            {
+              "path": "situationPersonnelle.dateNaissance",
+              "label": "Date de naissance",
+              "type": "date",
+              "format": "YYYY-MM-DD"
+            },
+            {
+              "path": "situationPersonnelle.professionCSP",
+              "label": "Catégorie socioprofessionnelle",
+              "type": "select",
+              "options": [
+                "Salarié Article 36",
+                "Salarié cadre",
+                "Salarié non cadre",
+                "Fonctionnaire",
+                "Profession libérale",
+                "Commerçant / Artisan",
+                "Agriculteur",
+                "Retraité",
+                "Sans activité"
+              ]
+            },
+            {
+              "path": "situationPersonnelle.professionLibelle",
+              "label": "Profession (libellé)",
+              "type": "text"
+            }
+          ]
+        },
+        {
+          "name": "Coordonnées",
+          "fields": [
+            {
+              "path": "situationPersonnelle.telephone",
+              "label": "Téléphone",
+              "type": "tel"
+            },
+            {
+              "path": "situationPersonnelle.email",
+              "label": "E-mail",
+              "type": "email"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "composition-familiale",
+      "label": "Composition familiale",
+      "sections": [
+        {
+          "name": "Situation familiale",
+          "fields": [
+            {
+              "path": "compositionFamiliale.situationFamiliale",
+              "label": "Situation familiale",
+              "type": "select",
+              "options": [
+                "Célibataire",
+                "Marié(e)",
+                "Pacsé(e)",
+                "Divorcé(e)",
+                "Veuf(ve)",
+                "Concubinage"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Partenaire",
+          "condition": "situationFamiliale in ['Marié(e)', 'Pacsé(e)', 'Concubinage']",
+          "fields": [
+            {
+              "path": "compositionFamiliale.partenaire.civilite",
+              "label": "Civilité",
+              "type": "toggle-group",
+              "options": ["Monsieur", "Madame", "Mademoiselle"]
+            },
+            {
+              "path": "compositionFamiliale.partenaire.nom",
+              "label": "Nom",
+              "type": "text"
+            },
+            {
+              "path": "compositionFamiliale.partenaire.prenom",
+              "label": "Prénom",
+              "type": "text"
+            },
+            {
+              "path": "compositionFamiliale.partenaire.dateNaissance",
+              "label": "Date de naissance",
+              "type": "date",
+              "format": "YYYY-MM-DD"
+            },
+            {
+              "path": "compositionFamiliale.partenaire.professionCSP",
+              "label": "Catégorie socioprofessionnelle",
+              "type": "select",
+              "options": [
+                "Salarié Article 36",
+                "Salarié cadre",
+                "Salarié non cadre",
+                "Fonctionnaire",
+                "Profession libérale",
+                "Commerçant / Artisan",
+                "Agriculteur",
+                "Retraité",
+                "Sans activité"
+              ]
+            },
+            {
+              "path": "compositionFamiliale.partenaire.professionLibelle",
+              "label": "Profession (libellé)",
+              "type": "text"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "enfants",
+      "label": "Enfants",
+      "sections": [
+        {
+          "name": "Enfants",
+          "dynamic": true,
+          "fields": [
+            {
+              "path": "enfants[].prenom",
+              "label": "Prénom",
+              "type": "text"
+            },
+            {
+              "path": "enfants[].dateNaissance",
+              "label": "Date de naissance",
+              "type": "date",
+              "format": "YYYY-MM-DD"
+            },
+            {
+              "path": "enfants[].aCharge",
+              "label": "À charge",
+              "type": "boolean"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "actifs",
+      "label": "Actifs",
+      "subSteps": [
+        {
+          "id": "immobilier",
+          "label": "Immobilier et autres biens d'usage",
+          "sections": [
+            {
+              "name": "Biens d'usage",
+              "storeKey": "actifsImmobilier.biensUsage",
+              "dynamic": true,
+              "fields": [
+                {
+                  "path": "nature",
+                  "label": "Nature",
+                  "type": "select",
+                  "options": ["Résidence principale", "Résidence secondaire", "Autre bien d'usage"]
+                },
+                {
+                  "path": "libelle",
+                  "label": "Libellé",
+                  "type": "text"
+                },
+                {
+                  "path": "valeur",
+                  "label": "Valeur (€)",
+                  "type": "number"
+                }
+              ]
+            },
+            {
+              "name": "Immobilier de rapport",
+              "storeKey": "actifsImmobilier.immobilierRapport",
+              "dynamic": true,
+              "fields": [
+                {
+                  "path": "nature",
+                  "label": "Nature",
+                  "type": "select",
+                  "options": ["Nu", "Meublé", "Parts de SCI", "Parts de SCPI"]
+                },
+                {
+                  "path": "libelle",
+                  "label": "Libellé",
+                  "type": "text"
+                },
+                {
+                  "path": "valeur",
+                  "label": "Valeur (€)",
+                  "type": "number"
+                }
+              ]
+            },
+            {
+              "name": "Immobilier défiscalisant",
+              "storeKey": "actifsImmobilier.immobilierDefiscalisant",
+              "dynamic": true,
+              "fields": [
+                {
+                  "path": "dispositif",
+                  "label": "Dispositif",
+                  "type": "select",
+                  "options": ["Pinel", "Denormandie", "Malraux", "Monuments historiques"]
+                },
+                {
+                  "path": "libelle",
+                  "label": "Libellé",
+                  "type": "text"
+                },
+                {
+                  "path": "valeur",
+                  "label": "Valeur (€)",
+                  "type": "number"
+                },
+                {
+                  "path": "date",
+                  "label": "Date",
+                  "type": "date",
+                  "format": "YYYY-MM-DD"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "epargne",
+          "label": "Épargne et prévoyance",
+          "sections": [
+            {
+              "name": "Disponibilités et valeurs mobilières",
+              "storeKey": "actifsEpargne.disponibilites",
+              "dynamic": true,
+              "fields": [
+                {
+                  "path": "nature",
+                  "label": "Nature",
+                  "type": "select",
+                  "options": ["Compte courant", "Livret A", "PEL", "Compte titres", "PEA"]
+                },
+                {
+                  "path": "libelle",
+                  "label": "Libellé",
+                  "type": "text"
+                },
+                {
+                  "path": "valeur",
+                  "label": "Valeur (€)",
+                  "type": "number"
+                }
+              ]
+            },
+            {
+              "name": "Assurance vie et prévoyance",
+              "storeKey": "actifsEpargne.assuranceVie",
+              "dynamic": true,
+              "fields": [
+                {
+                  "path": "nature",
+                  "label": "Nature",
+                  "type": "select",
+                  "options": ["Assurance vie", "Contrat de capitalisation", "Prévoyance"]
+                },
+                {
+                  "path": "libelle",
+                  "label": "Libellé",
+                  "type": "text"
+                },
+                {
+                  "path": "valeur",
+                  "label": "Capitaux décès (€)",
+                  "type": "number"
+                },
+                {
+                  "path": "date",
+                  "label": "Date de souscription",
+                  "type": "date",
+                  "format": "YYYY-MM-DD"
+                }
+              ]
+            },
+            {
+              "name": "Épargne retraite",
+              "storeKey": "actifsEpargne.epargneRetraite",
+              "dynamic": true,
+              "fields": [
+                {
+                  "path": "nature",
+                  "label": "Nature",
+                  "type": "select",
+                  "options": ["PER individuel", "PER entreprise", "Madelin", "PERP"]
+                },
+                {
+                  "path": "libelle",
+                  "label": "Libellé",
+                  "type": "text"
+                },
+                {
+                  "path": "valeur",
+                  "label": "Valeur estimée (€)",
+                  "type": "number"
+                },
+                {
+                  "path": "date",
+                  "label": "Date de souscription",
+                  "type": "date",
+                  "format": "YYYY-MM-DD"
+                }
+              ]
+            },
+            {
+              "name": "Produits de défiscalisation",
+              "storeKey": "actifsEpargne.produitsDefiscalisation",
+              "dynamic": true,
+              "fields": [
+                {
+                  "path": "nature",
+                  "label": "Nature",
+                  "type": "select",
+                  "options": ["FIP", "FCPI", "SOFICA", "Girardin"]
+                },
+                {
+                  "path": "libelle",
+                  "label": "Libellé",
+                  "type": "text"
+                },
+                {
+                  "path": "valeur",
+                  "label": "Valeur d'acquisition (€)",
+                  "type": "number"
+                },
+                {
+                  "path": "date",
+                  "label": "Date d'acquisition",
+                  "type": "date",
+                  "format": "YYYY-MM-DD"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "biens-professionnels",
+          "label": "Biens professionnels et fonciers",
+          "sections": [
+            {
+              "name": "Biens professionnels",
+              "storeKey": "actifsProfessionnels.biensProfessionnels",
+              "dynamic": true,
+              "fields": [
+                {
+                  "path": "nature",
+                  "label": "Nature",
+                  "type": "select",
+                  "options": ["Fonds de commerce", "Parts sociales", "Brevet / Licence", "Matériel"]
+                },
+                {
+                  "path": "libelle",
+                  "label": "Libellé",
+                  "type": "text"
+                },
+                {
+                  "path": "valeur",
+                  "label": "Valeur (€)",
+                  "type": "number"
+                }
+              ]
+            },
+            {
+              "name": "Placements fonciers et divers",
+              "storeKey": "actifsProfessionnels.placementsFonciers",
+              "dynamic": true,
+              "fields": [
+                {
+                  "path": "nature",
+                  "label": "Nature",
+                  "type": "select",
+                  "options": ["Forêt", "GFV", "GFA", "Autres"]
+                },
+                {
+                  "path": "libelle",
+                  "label": "Libellé",
+                  "type": "text"
+                },
+                {
+                  "path": "valeur",
+                  "label": "Valeur (€)",
+                  "type": "number"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "passifs",
+      "label": "Passifs",
+      "sections": [
+        {
+          "name": "Prêt immobilier",
+          "storeKey": "passifs.pretImmobilier",
+          "dynamic": true,
+          "fields": [
+            {
+              "path": "nature",
+              "label": "Nature",
+              "type": "select",
+              "options": ["Prêt amortissable", "Prêt in fine", "Crédit-bail"]
+            },
+            {
+              "path": "libelle",
+              "label": "Libellé",
+              "type": "text"
+            },
+            {
+              "path": "montant",
+              "label": "Capital restant dû (€)",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "Prêt professionnel",
+          "storeKey": "passifs.pretProfessionnel",
+          "dynamic": true,
+          "fields": [
+            {
+              "path": "nature",
+              "label": "Nature",
+              "type": "select",
+              "options": ["Prêt amortissable", "Prêt in fine", "Crédit-bail"]
+            },
+            {
+              "path": "libelle",
+              "label": "Libellé",
+              "type": "text"
+            },
+            {
+              "path": "montant",
+              "label": "Capital restant dû (€)",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "Autres prêts",
+          "storeKey": "passifs.autresPrets",
+          "dynamic": true,
+          "fields": [
+            {
+              "path": "nature",
+              "label": "Nature",
+              "type": "select",
+              "options": ["Prêt amortissable", "Prêt in fine", "Crédit-bail"]
+            },
+            {
+              "path": "libelle",
+              "label": "Libellé",
+              "type": "text"
+            },
+            {
+              "path": "montant",
+              "label": "Capital restant dû (€)",
+              "type": "number"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "revenus",
+      "label": "Revenus",
+      "sections": [
+        {
+          "name": "Revenus d'activités",
+          "storeKey": "revenus.revenusActivites",
+          "dynamic": true,
+          "fields": [
+            {
+              "path": "nature",
+              "label": "Nature",
+              "type": "select",
+              "options": ["Salaire", "BIC", "BNC", "BA"]
+            },
+            {
+              "path": "libelle",
+              "label": "Libellé",
+              "type": "text"
+            },
+            {
+              "path": "montant",
+              "label": "Montant annuel (€)",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "Pensions, retraites et rentes",
+          "storeKey": "revenus.pensionsRetraites",
+          "dynamic": true,
+          "fields": [
+            {
+              "path": "nature",
+              "label": "Nature",
+              "type": "select",
+              "options": ["Pension", "Rente"]
+            },
+            {
+              "path": "libelle",
+              "label": "Libellé",
+              "type": "text"
+            },
+            {
+              "path": "montant",
+              "label": "Montant annuel (€)",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "Revenus mobiliers",
+          "storeKey": "revenus.revenusMobiliers",
+          "dynamic": true,
+          "fields": [
+            {
+              "path": "nature",
+              "label": "Nature",
+              "type": "select",
+              "options": ["Dividende", "Intérêts"]
+            },
+            {
+              "path": "libelle",
+              "label": "Libellé",
+              "type": "text"
+            },
+            {
+              "path": "montant",
+              "label": "Montant annuel (€)",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "Revenus immobiliers",
+          "storeKey": "revenus.revenusImmobiliers",
+          "dynamic": true,
+          "fields": [
+            {
+              "path": "nature",
+              "label": "Nature",
+              "type": "select",
+              "options": ["Loyer"]
+            },
+            {
+              "path": "libelle",
+              "label": "Libellé",
+              "type": "text"
+            },
+            {
+              "path": "montant",
+              "label": "Montant annuel (€)",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "Autres revenus",
+          "storeKey": "revenus.autresRevenus",
+          "dynamic": true,
+          "fields": [
+            {
+              "path": "nature",
+              "label": "Nature",
+              "type": "select",
+              "options": ["Autres"]
+            },
+            {
+              "path": "libelle",
+              "label": "Libellé",
+              "type": "text"
+            },
+            {
+              "path": "montant",
+              "label": "Montant annuel (€)",
+              "type": "number"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "charges",
+      "label": "Charges",
+      "sections": [
+        {
+          "name": "Charges générales et fiscales",
+          "storeKey": "charges.chargesGenerales",
+          "dynamic": true,
+          "fields": [
+            {
+              "path": "nature",
+              "label": "Nature",
+              "type": "select",
+              "options": ["Impôt sur le revenu", "Taxe foncière", "Taxe d'habitation"]
+            },
+            {
+              "path": "libelle",
+              "label": "Libellé",
+              "type": "text"
+            },
+            {
+              "path": "montant",
+              "label": "Montant annuel (€)",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "Charges déductibles",
+          "storeKey": "charges.chargesDeductibles",
+          "dynamic": true,
+          "fields": [
+            {
+              "path": "nature",
+              "label": "Nature",
+              "type": "select",
+              "options": ["Pension alimentaire", "Autre"]
+            },
+            {
+              "path": "libelle",
+              "label": "Libellé",
+              "type": "text"
+            },
+            {
+              "path": "montant",
+              "label": "Montant annuel (€)",
+              "type": "number"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

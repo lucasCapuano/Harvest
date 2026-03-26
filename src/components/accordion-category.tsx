@@ -102,7 +102,7 @@ export function AccordionCategory({
                 {f.type === "select" ? (
                   <Select
                     value={row[f.key] ?? ""}
-                    onValueChange={(v) => onUpdate(row.id, f.key, v)}
+                    onValueChange={(v) => onUpdate(row.id, f.key, v ?? "")}
                   >
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder={f.placeholder} />

@@ -1,23 +1,37 @@
 "use client";
 
 import { useTheme } from "next-themes";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { HarvestLogo } from "@/components/harvest-logo";
+import { useWizard } from "@/lib/wizard-context";
+import { useClients } from "@/lib/clients-store";
 import { Save, Sun, Moon } from "lucide-react";
 
 export function Header() {
   const { theme, setTheme } = useTheme();
+  const { formData } = useWizard();
+  const { addClient } = useClients();
+  const router = useRouter();
+
+  const handleCreateClient = () => {
+    const sp = formData.situationPersonnelle;
+    const isPro = ["Chef d'entreprise", "Profession libérale", "Artisan/Commerçant"].includes(sp.professionCSP);
+    addClient({
+      firstName: sp.prenom,
+      lastName: sp.nom,
+      email: sp.email,
+      phone: sp.telephone,
+      type: isPro ? "Professionnel" : "Particulier",
+      status: "Actif",
+      formData,
+    });
+    router.push("/clients");
+  };
 
   return (
-    <header className="flex h-14 shrink-0 items-center justify-between border-b bg-card px-6">
-      {/* Left: Logo */}
-      <Link href="/applications">
-        <HarvestLogo className="h-5 w-auto" />
-      </Link>
-
+    <header className="flex h-14 shrink-0 items-center justify-end border-b bg-card px-6">
       {/* Right: Actions */}
       <div className="flex items-center gap-3">
         <Button
@@ -35,10 +49,10 @@ export function Header() {
           Brouillon sauvegardé
         </Badge>
         <Separator orientation="vertical" className="h-4" />
-        <Button variant="ghost" size="sm" className="text-muted-foreground">
+        <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={() => router.push("/clients")}>
           Abandonner
         </Button>
-        <Button size="sm" className="bg-[#0052CC] text-white shadow-md shadow-[#0052CC]/30 transition-all hover:bg-[#0052CC]/90 hover:shadow-lg hover:shadow-[#0052CC]/40">
+        <Button size="sm" className="bg-[#0052CC] text-white transition-all hover:bg-[#0052CC]/90" onClick={handleCreateClient}>
           Créer le dossier
         </Button>
       </div>

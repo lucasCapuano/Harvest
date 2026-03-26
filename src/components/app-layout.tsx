@@ -1,92 +1,35 @@
 "use client";
 
-import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
-import Link from "next/link";
-import { HarvestLogo } from "@/components/harvest-logo";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { AppSidebar } from "@/components/app-sidebar";
 import {
-  LayoutGrid,
-  Users,
-  AlertTriangle,
-  Newspaper,
-  Briefcase,
-  Video,
-  Bell,
-  HelpCircle,
-  Sun,
-  Moon,
-} from "lucide-react";
-
-const navItems = [
-  { label: "Applications", icon: LayoutGrid, href: "/applications" },
-  { label: "Clients", icon: Users, href: "/clients" },
-  { label: "Alertes", icon: AlertTriangle, href: "#" },
-  { label: "Actualités", icon: Newspaper, href: "#" },
-  { label: "Formations", icon: Briefcase, href: "#" },
-  { label: "Webinaires", icon: Video, href: "#" },
-];
+  SidebarProvider,
+  SidebarInset,
+} from "@/components/ui/sidebar";
+import { Bell, HelpCircle, Sun, Moon } from "lucide-react";
 
 export function AppLayout({
   title,
+  subtitle,
   children,
 }: {
   title: string;
+  subtitle?: React.ReactNode;
   children: React.ReactNode;
 }) {
-  const pathname = usePathname();
   const { theme, setTheme } = useTheme();
 
   return (
-    <div className="flex h-screen bg-muted/40">
-      {/* Sidebar */}
-      <aside className="flex w-[250px] shrink-0 flex-col border-r bg-card">
-        <div className="flex flex-1 flex-col gap-8 py-6">
-          <div className="px-4">
-            <Link href="/applications">
-              <HarvestLogo className="h-5 w-auto" />
-            </Link>
-          </div>
-
-          <nav className="flex flex-col gap-2 px-2">
-            {navItems.map((item) => {
-              const isActive = pathname === item.href;
-              return (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                    isActive
-                      ? "bg-[#0052CC] text-white shadow-md shadow-[#0052CC]/25"
-                      : "text-foreground hover:bg-muted"
-                  }`}
-                >
-                  <item.icon className="size-4" />
-                  {item.label}
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
-
-        <div className="border-t px-4 py-3">
-          <div className="flex items-center gap-3">
-            <div className="flex size-8 items-center justify-center rounded-full bg-muted text-xs font-semibold">
-              JD
+    <SidebarProvider>
+      <AppSidebar />
+      <SidebarInset>
+        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-6">
+          <div className="flex flex-1 items-center justify-between">
+            <div className="flex items-center gap-4">
+              <h1 className="text-lg font-semibold text-foreground">{title}</h1>
+              {subtitle && <>{subtitle}</>}
             </div>
-            <span className="text-sm font-medium text-foreground">
-              John DOE
-            </span>
-          </div>
-        </div>
-      </aside>
-
-      {/* Main content */}
-      <ScrollArea className="flex-1">
-        <div className="p-10">
-          <div className="mb-8 flex items-center justify-between">
-            <h1 className="text-3xl font-semibold text-foreground">{title}</h1>
             <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
@@ -105,9 +48,11 @@ export function AppLayout({
               </Button>
             </div>
           </div>
+        </header>
+        <div className="flex flex-1 flex-col overflow-hidden p-6">
           {children}
         </div>
-      </ScrollArea>
-    </div>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }

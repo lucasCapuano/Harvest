@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
 import type {
   StepId,
   ActifsSubStep,
@@ -36,6 +36,9 @@ interface WizardContextType {
   stepIndex: number;
   totalSteps: number;
   completionPercent: number;
+  transcriptMode: boolean;
+  liveMode: boolean;
+  confidenceScores: Record<string, number>;
   setCurrentStep: (step: StepId) => void;
   setCurrentActifsSubStep: (sub: ActifsSubStep) => void;
   markStepCompleted: (stepId: StepId) => void;
@@ -43,65 +46,123 @@ interface WizardContextType {
   updateFormData: <K extends keyof FormState>(key: K, value: FormState[K]) => void;
   goNext: () => void;
   goPrev: () => void;
+  enableTranscriptMode: (scores: Record<string, number>) => void;
+  enableLiveMode: () => void;
+  addConfidenceScore: (field: string, score: number) => void;
 }
 
-const defaultFormData: FormState = {
+const firstNamesMale = ["Jean-Pierre", "Philippe", "Antoine", "François", "Nicolas", "Éric", "Olivier", "Laurent", "Sébastien", "Christophe", "Marc", "Thierry", "Alexandre", "Julien", "Benoît"];
+const firstNamesFemale = ["Marie", "Sophie", "Claire", "Isabelle", "Catherine", "Valérie", "Nathalie", "Sandrine", "Aurélie", "Camille", "Charlotte", "Émilie", "Hélène", "Juliette", "Pauline"];
+const lastNames = ["Dupont", "Laurent", "Martin", "Bernard", "Moreau", "Petit", "Robert", "Durand", "Leroy", "Roux", "Girard", "Lefebvre", "Fournier", "Mercier", "Bonnet", "Lambert", "Rousseau", "Marchand", "Caron", "Colin"];
+const profCSPs = ["Salarié cadre", "Profession libérale", "Chef d'entreprise", "Fonctionnaire", "Artisan/Commerçant", "Retraité"];
+const profLabels: Record<string, string[]> = {
+  "Salarié cadre": ["Directeur commercial", "Ingénieur", "Responsable marketing", "Chef de projet", "Directeur financier"],
+  "Profession libérale": ["Avocate", "Médecin", "Architecte", "Notaire", "Expert-comptable"],
+  "Chef d'entreprise": ["Fondateur SAS", "Gérant SARL", "Dirigeant PME"],
+  "Fonctionnaire": ["Professeur agrégé", "Inspecteur des finances", "Magistrat"],
+  "Artisan/Commerçant": ["Restaurateur", "Artisan plombier", "Gérant de boutique"],
+  "Retraité": ["Ancien cadre dirigeant", "Ancien professeur", "Ancien médecin"],
+};
+
+function pick<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function randomPhone(): string {
+  const digits = () => String(Math.floor(Math.random() * 90) + 10);
+  return `06 ${digits()} ${digits()} ${digits()} ${digits()}`;
+}
+
+function randomDate(minYear: number, maxYear: number): string {
+  const y = minYear + Math.floor(Math.random() * (maxYear - minYear + 1));
+  const m = String(Math.floor(Math.random() * 12) + 1).padStart(2, "0");
+  const d = String(Math.floor(Math.random() * 28) + 1).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function generateRandomFormData(): FormState {
+  const civilitePrincipal = Math.random() > 0.5 ? "Monsieur" : "Madame";
+  const prenomPrincipal = civilitePrincipal === "Monsieur" ? pick(firstNamesMale) : pick(firstNamesFemale);
+  const nomPrincipal = pick(lastNames);
+  const cspPrincipal = pick(profCSPs);
+  const labelPrincipal = pick(profLabels[cspPrincipal]);
+
+  const civPartenaire = civilitePrincipal === "Monsieur" ? "Madame" : "Monsieur";
+  const prenomPartenaire = civPartenaire === "Monsieur" ? pick(firstNamesMale) : pick(firstNamesFemale);
+  const cspPartenaire = pick(profCSPs);
+  const labelPartenaire = pick(profLabels[cspPartenaire]);
+
+  const nbEnfants = Math.floor(Math.random() * 4);
+  const enfants: Enfant[] = Array.from({ length: nbEnfants }, (_, i) => ({
+    id: `e${i + 1}`,
+    prenom: pick([...firstNamesMale, ...firstNamesFemale]),
+    dateNaissance: randomDate(2005, 2020),
+    aCharge: true,
+  }));
+
+  const initial = prenomPrincipal[0].toLowerCase();
+
+  return {
+    situationPersonnelle: {
+      civilite: civilitePrincipal,
+      nom: nomPrincipal,
+      prenom: prenomPrincipal,
+      dateNaissance: randomDate(1960, 1990),
+      professionCSP: cspPrincipal,
+      professionLibelle: labelPrincipal,
+      telephone: randomPhone(),
+      email: `${initial}.${nomPrincipal.toLowerCase()}@email.fr`,
+    },
+    compositionFamiliale: {
+      situationFamiliale: "Marié(e)",
+      partenaire: {
+        civilite: civPartenaire,
+        nom: nomPrincipal,
+        prenom: prenomPartenaire,
+        dateNaissance: randomDate(1960, 1990),
+        professionCSP: cspPartenaire,
+        professionLibelle: labelPartenaire,
+      },
+    },
+    enfants,
+    actifsImmobilier: { biensUsage: [], immobilierRapport: [], immobilierDefiscalisant: [] },
+    actifsEpargne: { disponibilites: [], assuranceVie: [], epargneRetraite: [], produitsDefiscalisation: [] },
+    actifsProfessionnels: { biensProfessionnels: [], placementsFonciers: [] },
+    passifs: { pretImmobilier: [], pretProfessionnel: [], autresPrets: [] },
+    revenus: { revenusActivites: [], pensionsRetraites: [], revenusMobiliers: [], revenusImmobiliers: [], autresRevenus: [] },
+    charges: { chargesGenerales: [], chargesDeductibles: [] },
+  };
+}
+
+const staticInitialFormData: FormState = {
   situationPersonnelle: {
-    civilite: "Monsieur",
-    nom: "Dupont",
-    prenom: "Jean-Pierre",
-    dateNaissance: "1978-05-14",
-    professionCSP: "Salarié cadre",
-    professionLibelle: "Directeur commercial",
-    telephone: "06 12 34 56 78",
-    email: "jp.dupont@email.fr",
+    civilite: "",
+    nom: "",
+    prenom: "",
+    dateNaissance: "",
+    professionCSP: "",
+    professionLibelle: "",
+    telephone: "",
+    email: "",
   },
   compositionFamiliale: {
-    situationFamiliale: "Marié(e)",
+    situationFamiliale: "",
     partenaire: {
-      civilite: "Madame",
-      nom: "Dupont",
-      prenom: "Marie",
-      dateNaissance: "1980-09-22",
-      professionCSP: "Profession libérale",
-      professionLibelle: "Avocate",
+      civilite: "",
+      nom: "",
+      prenom: "",
+      dateNaissance: "",
+      professionCSP: "",
+      professionLibelle: "",
     },
   },
-  enfants: [
-    { id: "e1", prenom: "Lucas", dateNaissance: "2008-03-12", aCharge: true },
-    { id: "e2", prenom: "Emma", dateNaissance: "2011-07-25", aCharge: true },
-  ],
-  actifsImmobilier: {
-    biensUsage: [],
-    immobilierRapport: [],
-    immobilierDefiscalisant: [],
-  },
-  actifsEpargne: {
-    disponibilites: [],
-    assuranceVie: [],
-    epargneRetraite: [],
-    produitsDefiscalisation: [],
-  },
-  actifsProfessionnels: {
-    biensProfessionnels: [],
-    placementsFonciers: [],
-  },
-  passifs: {
-    pretImmobilier: [],
-    pretProfessionnel: [],
-    autresPrets: [],
-  },
-  revenus: {
-    revenusActivites: [],
-    pensionsRetraites: [],
-    revenusMobiliers: [],
-    revenusImmobiliers: [],
-    autresRevenus: [],
-  },
-  charges: {
-    chargesGenerales: [],
-    chargesDeductibles: [],
-  },
+  enfants: [],
+  actifsImmobilier: { biensUsage: [], immobilierRapport: [], immobilierDefiscalisant: [] },
+  actifsEpargne: { disponibilites: [], assuranceVie: [], epargneRetraite: [], produitsDefiscalisation: [] },
+  actifsProfessionnels: { biensProfessionnels: [], placementsFonciers: [] },
+  passifs: { pretImmobilier: [], pretProfessionnel: [], autresPrets: [] },
+  revenus: { revenusActivites: [], pensionsRetraites: [], revenusMobiliers: [], revenusImmobiliers: [], autresRevenus: [] },
+  charges: { chargesGenerales: [], chargesDeductibles: [] },
 };
 
 const defaultSteps: Step[] = [
@@ -142,7 +203,32 @@ export function WizardProvider({ children }: { children: React.ReactNode }) {
   const [currentStep, setCurrentStep] = useState<StepId>("situation-personnelle");
   const [currentActifsSubStep, setCurrentActifsSubStep] = useState<ActifsSubStep>("immobilier");
   const [steps, setSteps] = useState<Step[]>(defaultSteps);
-  const [formData, setFormData] = useState<FormState>(defaultFormData);
+  const [formData, setFormData] = useState<FormState>(staticInitialFormData);
+  const [transcriptMode, setTranscriptMode] = useState(false);
+  const [liveMode, setLiveMode] = useState(false);
+  const [confidenceScores, setConfidenceScores] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("mode") === "live") return;
+    }
+    setFormData(generateRandomFormData());
+  }, []);
+
+  const enableTranscriptMode = useCallback((scores: Record<string, number>) => {
+    setTranscriptMode(true);
+    setConfidenceScores(scores);
+  }, []);
+
+  const enableLiveMode = useCallback(() => {
+    setLiveMode(true);
+    setFormData(staticInitialFormData);
+  }, []);
+
+  const addConfidenceScore = useCallback((field: string, score: number) => {
+    setConfidenceScores((prev) => ({ ...prev, [field]: score }));
+  }, []);
 
   const stepIndex = stepOrder.indexOf(currentStep) + 1;
   const totalSteps = stepOrder.length;
@@ -229,6 +315,9 @@ export function WizardProvider({ children }: { children: React.ReactNode }) {
         stepIndex,
         totalSteps,
         completionPercent,
+        transcriptMode,
+        liveMode,
+        confidenceScores,
         setCurrentStep,
         setCurrentActifsSubStep,
         markStepCompleted,
@@ -236,6 +325,9 @@ export function WizardProvider({ children }: { children: React.ReactNode }) {
         updateFormData,
         goNext,
         goPrev,
+        enableTranscriptMode,
+        enableLiveMode,
+        addConfidenceScore,
       }}
     >
       {children}

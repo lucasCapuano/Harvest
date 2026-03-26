@@ -15,6 +15,7 @@ import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StepNavigation } from "@/components/step-navigation";
 import { StepHeader } from "@/components/step-header";
+import { ConfidenceBadge } from "@/components/confidence-badge";
 import type { Civilite } from "@/lib/types";
 
 const SITUATION_OPTIONS = [
@@ -72,7 +73,7 @@ export function CompositionFamilialeStep() {
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            <Label>Situation familiale</Label>
+            <Label>Situation familiale<ConfidenceBadge field="compositionFamiliale.situationFamiliale" /></Label>
             <Select value={data.situationFamiliale} onValueChange={updateSituation}>
               <SelectTrigger className="w-72">
                 <SelectValue placeholder="À renseigner" />
@@ -99,7 +100,7 @@ export function CompositionFamilialeStep() {
             <CardContent className="space-y-5">
               {/* Civilité */}
               <div className="space-y-2">
-                <Label>Civilité</Label>
+                <Label>Civilité<ConfidenceBadge field="compositionFamiliale.partenaire.civilite" /></Label>
                 <ToggleGroup variant="outline" spacing={2}>
                   {CIVILITE_OPTIONS.map((opt) => (
                     <ToggleGroupItem
@@ -108,6 +109,7 @@ export function CompositionFamilialeStep() {
                       onPressedChange={(pressed) => {
                         updatePartenaire("civilite", pressed ? opt : "");
                       }}
+                      className={data.partenaire.civilite === opt ? "bg-primary text-primary-foreground" : ""}
                     >
                       {opt}
                     </ToggleGroupItem>
@@ -118,14 +120,14 @@ export function CompositionFamilialeStep() {
               {/* Nom / Prénom */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Nom</Label>
+                  <Label>Nom<ConfidenceBadge field="compositionFamiliale.partenaire.nom" /></Label>
                   <Input
                     value={data.partenaire.nom}
                     onChange={(e) => updatePartenaire("nom", e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Prénom</Label>
+                  <Label>Prénom<ConfidenceBadge field="compositionFamiliale.partenaire.prenom" /></Label>
                   <Input
                     value={data.partenaire.prenom}
                     onChange={(e) => updatePartenaire("prenom", e.target.value)}
@@ -135,7 +137,7 @@ export function CompositionFamilialeStep() {
 
               {/* Date de naissance */}
               <div className="space-y-2">
-                <Label>Date de naissance</Label>
+                <Label>Date de naissance<ConfidenceBadge field="compositionFamiliale.partenaire.dateNaissance" /></Label>
                 <Input
                   type="date"
                   value={data.partenaire.dateNaissance}
@@ -148,7 +150,7 @@ export function CompositionFamilialeStep() {
               {/* Profession */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Profession (CSP)</Label>
+                  <Label>Profession (CSP)<ConfidenceBadge field="compositionFamiliale.partenaire.professionCSP" /></Label>
                   <Select
                     value={data.partenaire.professionCSP}
                     onValueChange={(v) => { if (v) updatePartenaire("professionCSP", v); }}
@@ -166,7 +168,7 @@ export function CompositionFamilialeStep() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Profession (libellé)</Label>
+                  <Label>Profession (libellé)<ConfidenceBadge field="compositionFamiliale.partenaire.professionLibelle" /></Label>
                   <Input
                     value={data.partenaire.professionLibelle}
                     onChange={(e) =>

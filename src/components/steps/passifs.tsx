@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
+import { useWizard } from "@/lib/wizard-context";
 import { AccordionCategory, type FieldConfig, type RowData } from "@/components/accordion-category";
 import { StepNavigation } from "@/components/step-navigation";
 import { StepHeader } from "@/components/step-header";
@@ -8,8 +9,19 @@ import { StepHeader } from "@/components/step-header";
 let nextId = 100;
 function genId() { return String(nextId++); }
 
-function useCategoryRows(initial?: RowData[]) {
+function useCategoryRows(initial?: RowData[], liveOverride?: unknown[]) {
   const [rows, setRows] = useState<RowData[]>(() => initial ?? [{ id: genId() }]);
+  const liveLen = liveOverride?.length ?? 0;
+  const prevLiveLen = useRef(0);
+
+  useEffect(() => {
+    if (!liveOverride || liveLen === 0) return;
+    if (liveLen !== prevLiveLen.current) {
+      prevLiveLen.current = liveLen;
+      setRows(liveOverride as RowData[]);
+    }
+  }, [liveLen, liveOverride]);
+
   const add = useCallback(() => setRows((p) => [...p, { id: genId() }]), []);
   const remove = useCallback((id: string) => setRows((p) => p.filter((r) => r.id !== id)), []);
   const update = useCallback((id: string, key: string, value: string) => {
@@ -25,16 +37,28 @@ const fields: FieldConfig[] = [
 ];
 
 export function PassifsStep() {
-  const pretImmo = useCategoryRows([
-    { id: "p1", nature: "Prêt amortissable", libelle: "Crédit Appartement Paris", montant: "320 000" },
-    { id: "p2", nature: "Prêt amortissable", libelle: "Crédit Maison Deauville", montant: "145 000" },
-  ]);
-  const pretPro = useCategoryRows([
-    { id: "p3", nature: "Crédit-bail", libelle: "Leasing véhicule société", montant: "18 500" },
-  ]);
-  const autresPrets = useCategoryRows([
-    { id: "p4", nature: "Prêt amortissable", libelle: "Prêt travaux cuisine", montant: "8 000" },
-  ]);
+  const { formData, liveMode } = useWizard();
+  const ctxPassifs = liveMode ? (formData.passifs as any) : null;
+
+  const pretImmo = useCategoryRows(
+    liveMode ? undefined : [
+      { id: "p1", nature: "Prêt amortissable", libelle: "Crédit Appartement Paris", montant: "320 000" },
+      { id: "p2", nature: "Prêt amortissable", libelle: "Crédit Maison Deauville", montant: "145 000" },
+    ],
+    ctxPassifs?.pretImmobilier
+  );
+  const pretPro = useCategoryRows(
+    liveMode ? undefined : [
+      { id: "p3", nature: "Crédit-bail", libelle: "Leasing véhicule société", montant: "18 500" },
+    ],
+    ctxPassifs?.pretProfessionnel
+  );
+  const autresPrets = useCategoryRows(
+    liveMode ? undefined : [
+      { id: "p4", nature: "Prêt amortissable", libelle: "Prêt travaux cuisine", montant: "8 000" },
+    ],
+    ctxPassifs?.autresPrets
+  );
 
   return (
     <div>

@@ -15,6 +15,7 @@ import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StepNavigation } from "@/components/step-navigation";
 import { StepHeader } from "@/components/step-header";
+import { ConfidenceBadge } from "@/components/confidence-badge";
 import type { Civilite } from "@/lib/types";
 
 const CSP_OPTIONS = [
@@ -53,7 +54,7 @@ export function SituationPersonnelleStep() {
         <CardContent className="space-y-5">
           {/* Civilité */}
           <div className="space-y-2">
-            <Label>Civilité</Label>
+            <Label>Civilité<ConfidenceBadge field="situationPersonnelle.civilite" /></Label>
             <ToggleGroup variant="outline" spacing={2}>
               {CIVILITE_OPTIONS.map((opt) => (
                 <ToggleGroupItem
@@ -62,6 +63,7 @@ export function SituationPersonnelleStep() {
                   onPressedChange={(pressed) => {
                     update("civilite", pressed ? opt : "");
                   }}
+                  className={data.civilite === opt ? "bg-primary text-primary-foreground" : ""}
                 >
                   {opt}
                 </ToggleGroupItem>
@@ -72,7 +74,7 @@ export function SituationPersonnelleStep() {
           {/* Nom / Prénom */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="nom">Nom</Label>
+              <Label htmlFor="nom">Nom<ConfidenceBadge field="situationPersonnelle.nom" /></Label>
               <Input
                 id="nom"
                 value={data.nom}
@@ -80,7 +82,7 @@ export function SituationPersonnelleStep() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="prenom">Prénom</Label>
+              <Label htmlFor="prenom">Prénom<ConfidenceBadge field="situationPersonnelle.prenom" /></Label>
               <Input
                 id="prenom"
                 value={data.prenom}
@@ -91,7 +93,7 @@ export function SituationPersonnelleStep() {
 
           {/* Date de naissance */}
           <div className="space-y-2">
-            <Label htmlFor="dateNaissance">Date de naissance</Label>
+            <Label htmlFor="dateNaissance">Date de naissance<ConfidenceBadge field="situationPersonnelle.dateNaissance" /></Label>
             <Input
               id="dateNaissance"
               type="date"
@@ -104,7 +106,7 @@ export function SituationPersonnelleStep() {
           {/* Profession */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Profession (CSP)</Label>
+              <Label>Profession (CSP)<ConfidenceBadge field="situationPersonnelle.professionCSP" /></Label>
               <Select
                 value={data.professionCSP}
                 onValueChange={(v) => { if (v) update("professionCSP", v); }}
@@ -122,7 +124,7 @@ export function SituationPersonnelleStep() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="professionLibelle">Profession (libellé)</Label>
+              <Label htmlFor="professionLibelle">Profession (libellé)<ConfidenceBadge field="situationPersonnelle.professionLibelle" /></Label>
               <Input
                 id="professionLibelle"
                 value={data.professionLibelle}
@@ -143,7 +145,7 @@ export function SituationPersonnelleStep() {
         <CardContent>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="telephone">Téléphone</Label>
+              <Label htmlFor="telephone">Téléphone<ConfidenceBadge field="situationPersonnelle.telephone" /></Label>
               <Input
                 id="telephone"
                 type="tel"
@@ -153,7 +155,7 @@ export function SituationPersonnelleStep() {
               <p className="text-xs text-muted-foreground">Champ optionnel</p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">E-mail</Label>
+              <Label htmlFor="email">E-mail<ConfidenceBadge field="situationPersonnelle.email" /></Label>
               <Input
                 id="email"
                 type="email"

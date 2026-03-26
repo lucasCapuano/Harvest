@@ -28,9 +28,7 @@ export interface Enfant {
 
 export interface CategoryItem {
   id: string;
-  label: string;
-  montant: number;
-  description?: string;
+  [key: string]: string | undefined;
 }
 
 export interface ActifsImmobilier {

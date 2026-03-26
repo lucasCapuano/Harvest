@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
+import { useWizard } from "@/lib/wizard-context";
 import { AccordionCategory, type FieldConfig, type RowData } from "@/components/accordion-category";
 import { StepNavigation } from "@/components/step-navigation";
 import { StepHeader } from "@/components/step-header";
@@ -8,8 +9,19 @@ import { StepHeader } from "@/components/step-header";
 let nextId = 200;
 function genId() { return String(nextId++); }
 
-function useCategoryRows(initial?: RowData[]) {
+function useCategoryRows(initial?: RowData[], liveOverride?: unknown[]) {
   const [rows, setRows] = useState<RowData[]>(() => initial ?? [{ id: genId() }]);
+  const liveLen = liveOverride?.length ?? 0;
+  const prevLiveLen = useRef(0);
+
+  useEffect(() => {
+    if (!liveOverride || liveLen === 0) return;
+    if (liveLen !== prevLiveLen.current) {
+      prevLiveLen.current = liveLen;
+      setRows(liveOverride as RowData[]);
+    }
+  }, [liveLen, liveOverride]);
+
   const add = useCallback(() => setRows((p) => [...p, { id: genId() }]), []);
   const remove = useCallback((id: string) => setRows((p) => p.filter((r) => r.id !== id)), []);
   const update = useCallback((id: string, key: string, value: string) => {
@@ -25,22 +37,40 @@ const fields: FieldConfig[] = [
 ];
 
 export function RevenusStep() {
-  const activites = useCategoryRows([
-    { id: "r1", nature: "Salaire", libelle: "Salaire JP Dupont - Renault", montant: "78 000" },
-    { id: "r2", nature: "BNC", libelle: "Honoraires Cabinet Marie Dupont", montant: "95 000" },
-  ]);
-  const pensions = useCategoryRows([
-    { id: "r3", nature: "Pension", libelle: "Pension alimentaire reçue", montant: "4 800" },
-  ]);
-  const mobiliers = useCategoryRows([
-    { id: "r4", nature: "Dividende", libelle: "Dividendes SCI Familiale", montant: "6 200" },
-  ]);
-  const immobiliers = useCategoryRows([
-    { id: "r5", nature: "Loyer", libelle: "Loyer Studio Lyon 3e", montant: "9 600" },
-  ]);
-  const autres = useCategoryRows([
-    { id: "r6", nature: "Salaire", libelle: "Prime intéressement", montant: "3 500" },
-  ]);
+  const { formData, liveMode } = useWizard();
+  const ctxRevenus = liveMode ? (formData.revenus as any) : null;
+
+  const activites = useCategoryRows(
+    liveMode ? undefined : [
+      { id: "r1", nature: "Salaire", libelle: "Salaire JP Dupont - Renault", montant: "78 000" },
+      { id: "r2", nature: "BNC", libelle: "Honoraires Cabinet Marie Dupont", montant: "95 000" },
+    ],
+    ctxRevenus?.revenusActivites
+  );
+  const pensions = useCategoryRows(
+    liveMode ? undefined : [
+      { id: "r3", nature: "Pension", libelle: "Pension alimentaire reçue", montant: "4 800" },
+    ],
+    ctxRevenus?.pensionsRetraites
+  );
+  const mobiliers = useCategoryRows(
+    liveMode ? undefined : [
+      { id: "r4", nature: "Dividende", libelle: "Dividendes SCI Familiale", montant: "6 200" },
+    ],
+    ctxRevenus?.revenusMobiliers
+  );
+  const immobiliers = useCategoryRows(
+    liveMode ? undefined : [
+      { id: "r5", nature: "Loyer", libelle: "Loyer Studio Lyon 3e", montant: "9 600" },
+    ],
+    ctxRevenus?.revenusImmobiliers
+  );
+  const autres = useCategoryRows(
+    liveMode ? undefined : [
+      { id: "r6", nature: "Salaire", libelle: "Prime intéressement", montant: "3 500" },
+    ],
+    ctxRevenus?.autresRevenus
+  );
 
   return (
     <div>

@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/card";
 import { StepNavigation } from "@/components/step-navigation";
 import { StepHeader } from "@/components/step-header";
+import { ConfidenceBadge } from "@/components/confidence-badge";
 import { Plus, Users, Trash2 } from "lucide-react";
 import type { Enfant } from "@/lib/types";
 
@@ -72,7 +73,7 @@ export function EnfantsStep() {
           {enfants.map((enfant, idx) => (
             <Card key={enfant.id}>
               <CardHeader>
-                <CardTitle>Enfant {idx + 1}</CardTitle>
+                <CardTitle>Enfant {idx + 1}<ConfidenceBadge field="enfants" /></CardTitle>
                 <CardAction>
                   <Button
                     variant="ghost"

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useWizard } from "@/lib/wizard-context";
 import { AccordionCategory, type FieldConfig, type RowData } from "@/components/accordion-category";
 import { StepNavigation } from "@/components/step-navigation";
@@ -11,8 +11,18 @@ function genId() {
   return String(nextId++);
 }
 
-function useCategoryRows(initial?: RowData[]) {
+function useCategoryRows(initial?: RowData[], liveOverride?: unknown[]) {
   const [rows, setRows] = useState<RowData[]>(() => initial ?? [{ id: genId() }]);
+  const liveLen = liveOverride?.length ?? 0;
+  const prevLiveLen = useRef(0);
+
+  useEffect(() => {
+    if (!liveOverride || liveLen === 0) return;
+    if (liveLen !== prevLiveLen.current) {
+      prevLiveLen.current = liveLen;
+      setRows(liveOverride as RowData[]);
+    }
+  }, [liveLen, liveOverride]);
 
   const add = useCallback(() => {
     setRows((prev) => [...prev, { id: genId() }]);
@@ -66,16 +76,28 @@ const fieldsDefiscalisant: FieldConfig[] = [
 /* ── Sub-step components ────────────────────────────────── */
 
 export function ActifsImmobilierStep() {
-  const biensUsage = useCategoryRows([
-    { id: "a1", nature: "Résidence principale", libelle: "Appartement Paris 16e", valeur: "650 000" },
-    { id: "a2", nature: "Résidence secondaire", libelle: "Maison Deauville", valeur: "380 000" },
-  ]);
-  const immoRapport = useCategoryRows([
-    { id: "a3", nature: "Meublé", libelle: "Studio Lyon 3e", valeur: "185 000" },
-  ]);
-  const immoDefiscalisant = useCategoryRows([
-    { id: "a4", dispositif: "Pinel", libelle: "T2 Bordeaux Euratlantique", valeur: "210 000", date: "15/03/2020" },
-  ]);
+  const { formData, liveMode } = useWizard();
+  const ctxImmo = liveMode ? (formData.actifsImmobilier as any) : null;
+
+  const biensUsage = useCategoryRows(
+    liveMode ? undefined : [
+      { id: "a1", nature: "Résidence principale", libelle: "Appartement Paris 16e", valeur: "650 000" },
+      { id: "a2", nature: "Résidence secondaire", libelle: "Maison Deauville", valeur: "380 000" },
+    ],
+    ctxImmo?.biensUsage
+  );
+  const immoRapport = useCategoryRows(
+    liveMode ? undefined : [
+      { id: "a3", nature: "Meublé", libelle: "Studio Lyon 3e", valeur: "185 000" },
+    ],
+    ctxImmo?.immobilierRapport
+  );
+  const immoDefiscalisant = useCategoryRows(
+    liveMode ? undefined : [
+      { id: "a4", dispositif: "Pinel", libelle: "T2 Bordeaux Euratlantique", valeur: "210 000", date: "15/03/2020" },
+    ],
+    ctxImmo?.immobilierDefiscalisant
+  );
 
   return (
     <div>
@@ -119,20 +141,35 @@ export function ActifsImmobilierStep() {
 }
 
 export function ActifsEpargneStep() {
-  const disponibilites = useCategoryRows([
-    { id: "a5", nature: "Compte courant", libelle: "CCP Société Générale", valeur: "12 500" },
-    { id: "a6", nature: "Livret A", libelle: "Livret A BNP", valeur: "22 950" },
-    { id: "a7", nature: "PEA", libelle: "PEA Boursorama", valeur: "45 000" },
-  ]);
-  const assuranceVie = useCategoryRows([
-    { id: "a8", nature: "Assurance vie", libelle: "Generali Épargne", valeur: "150 000", date: "10/06/2012" },
-  ]);
-  const epargneRetraite = useCategoryRows([
-    { id: "a9", nature: "PER individuel", libelle: "PER Swisslife", valeur: "35 000", date: "01/09/2019" },
-  ]);
-  const produitsDef = useCategoryRows([
-    { id: "a10", nature: "FCPI", libelle: "FCPI Innovation 2023", valeur: "10 000", date: "15/12/2023" },
-  ]);
+  const { formData, liveMode } = useWizard();
+  const ctxEpargne = liveMode ? (formData.actifsEpargne as any) : null;
+
+  const disponibilites = useCategoryRows(
+    liveMode ? undefined : [
+      { id: "a5", nature: "Compte courant", libelle: "CCP Société Générale", valeur: "12 500" },
+      { id: "a6", nature: "Livret A", libelle: "Livret A BNP", valeur: "22 950" },
+      { id: "a7", nature: "PEA", libelle: "PEA Boursorama", valeur: "45 000" },
+    ],
+    ctxEpargne?.disponibilites
+  );
+  const assuranceVie = useCategoryRows(
+    liveMode ? undefined : [
+      { id: "a8", nature: "Assurance vie", libelle: "Generali Épargne", valeur: "150 000", date: "10/06/2012" },
+    ],
+    ctxEpargne?.assuranceVie
+  );
+  const epargneRetraite = useCategoryRows(
+    liveMode ? undefined : [
+      { id: "a9", nature: "PER individuel", libelle: "PER Swisslife", valeur: "35 000", date: "01/09/2019" },
+    ],
+    ctxEpargne?.epargneRetraite
+  );
+  const produitsDef = useCategoryRows(
+    liveMode ? undefined : [
+      { id: "a10", nature: "FCPI", libelle: "FCPI Innovation 2023", valeur: "10 000", date: "15/12/2023" },
+    ],
+    ctxEpargne?.produitsDefiscalisation
+  );
 
   return (
     <div>
