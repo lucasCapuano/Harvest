@@ -86,7 +86,7 @@ export function Sidebar() {
                         ? "h-[calc(100%-22px)]"
                         : "h-[calc(100%-22px)]",
                       isPast || isCompleted
-                        ? "bg-primary/25"
+                        ? "bg-foreground/15"
                         : "bg-border"
                     )}
                   />
@@ -106,10 +106,10 @@ export function Sidebar() {
                     className={cn(
                       "relative z-10 flex size-[30px] shrink-0 items-center justify-center rounded-full border-2 transition-all",
                       isActive &&
-                        "border-primary bg-primary text-primary-foreground shadow-[0_0_0_3px] shadow-primary/20",
+                        "border-foreground bg-foreground text-background shadow-[0_0_0_3px] shadow-foreground/15",
                       isCompleted &&
                         !isActive &&
-                        "border-primary bg-primary/10 text-primary",
+                        "border-foreground/40 bg-foreground/10 text-foreground",
                       !isActive &&
                         !isCompleted &&
                         "border-border bg-card text-muted-foreground group-hover:border-muted-foreground/50"
@@ -157,8 +157,8 @@ export function Sidebar() {
                           <div
                             className={cn(
                               "size-1.5 shrink-0 rounded-full transition-colors",
-                              isSubActive && "bg-primary",
-                              !isSubActive && sub.completed && "bg-primary/50",
+                              isSubActive && "bg-foreground",
+                              !isSubActive && sub.completed && "bg-foreground/40",
                               !isSubActive &&
                                 !sub.completed &&
                                 "bg-muted-foreground/30"

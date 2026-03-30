@@ -78,7 +78,7 @@ export function AccordionCategory({
       </CardHeader>
       <CardContent className="space-y-3">
         {infoText && (
-          <p className="text-xs text-primary">{infoText}</p>
+          <p className="text-xs text-muted-foreground">{infoText}</p>
         )}
 
         {/* Column headers */}

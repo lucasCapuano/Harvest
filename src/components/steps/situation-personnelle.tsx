@@ -63,7 +63,7 @@ export function SituationPersonnelleStep() {
                   onPressedChange={(pressed) => {
                     update("civilite", pressed ? opt : "");
                   }}
-                  className={data.civilite === opt ? "bg-primary text-primary-foreground" : ""}
+                  className={data.civilite === opt ? "bg-foreground text-background" : ""}
                 >
                   {opt}
                 </ToggleGroupItem>

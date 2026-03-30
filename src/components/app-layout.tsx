@@ -14,7 +14,7 @@ export function AppLayout({
   subtitle,
   children,
 }: {
-  title: string;
+  title: React.ReactNode;
   subtitle?: React.ReactNode;
   children: React.ReactNode;
 }) {

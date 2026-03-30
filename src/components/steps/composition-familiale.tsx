@@ -109,7 +109,7 @@ export function CompositionFamilialeStep() {
                       onPressedChange={(pressed) => {
                         updatePartenaire("civilite", pressed ? opt : "");
                       }}
-                      className={data.partenaire.civilite === opt ? "bg-primary text-primary-foreground" : ""}
+                      className={data.partenaire.civilite === opt ? "bg-foreground text-background" : ""}
                     >
                       {opt}
                     </ToggleGroupItem>

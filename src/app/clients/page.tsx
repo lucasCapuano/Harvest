@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { AppLayout } from "@/components/app-layout";
 import { Card } from "@/components/ui/card";
@@ -45,6 +45,9 @@ import {
   Loader2,
   CheckCircle2,
   File,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import { useClients, type Client, computePatrimoineNet, formatPatrimoine } from "@/lib/clients-store";
 
@@ -225,6 +228,90 @@ export default function ClientsPage() {
   const { clients } = useClients();
   const router = useRouter();
 
+  // Data table state
+  const [search, setSearch] = useState("");
+  const [sortKey, setSortKey] = useState<"name" | "email" | "patrimoine" | "status" | null>(null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+
+
+  const toggleSort = (key: typeof sortKey) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  };
+
+  const SortIcon = ({ col }: { col: typeof sortKey }) => {
+    if (sortKey !== col) return <ArrowUpDown className="ml-1 size-3" />;
+    return sortDir === "asc" ? <ArrowUp className="ml-1 size-3" /> : <ArrowDown className="ml-1 size-3" />;
+  };
+
+  const filtered = useMemo(() => {
+    let list = [...clients];
+    if (search) {
+      const q = search.toLowerCase();
+      list = list.filter(
+        (c) =>
+          `${c.firstName} ${c.lastName}`.toLowerCase().includes(q) ||
+          c.email.toLowerCase().includes(q)
+      );
+    }
+    if (sortKey) {
+      list.sort((a, b) => {
+        let cmp = 0;
+        switch (sortKey) {
+          case "name":
+            cmp = `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`);
+            break;
+          case "email":
+            cmp = a.email.localeCompare(b.email);
+            break;
+          case "status":
+            cmp = a.status.localeCompare(b.status);
+            break;
+          case "patrimoine":
+            cmp = computePatrimoineNet(a.formData) - computePatrimoineNet(b.formData);
+            break;
+        }
+        return sortDir === "asc" ? cmp : -cmp;
+      });
+    }
+    return list;
+  }, [clients, search, sortKey, sortDir]);
+
+
+
+  const allSelected = filtered.length > 0 && filtered.every((c) => selectedIds.has(c.id));
+  const someSelected = filtered.some((c) => selectedIds.has(c.id));
+
+  const toggleAll = () => {
+    if (allSelected) {
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        filtered.forEach((c) => next.delete(c.id));
+        return next;
+      });
+    } else {
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        filtered.forEach((c) => next.add(c.id));
+        return next;
+      });
+    }
+  };
+
+  const toggleOne = (id: number) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) setTranscriptFile(file);
@@ -259,9 +346,17 @@ export default function ClientsPage() {
     <AppLayout title="Clients">
       {/* Toolbar */}
       <div className="mb-6 flex items-center justify-between gap-4">
-        <div className="relative max-w-sm flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input placeholder="Rechercher un client..." className="pl-9" />
+        <div className="flex items-center gap-3 flex-1">
+          <div className="relative max-w-sm flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Filtrer les clients..."
+              className="pl-9"
+              value={search}
+              onChange={(e) => { setSearch(e.target.value); }}
+            />
+          </div>
+
         </div>
         <div className="flex items-center gap-2">
           <div className="flex items-center rounded-lg border bg-muted/50 p-0.5">
@@ -380,64 +475,111 @@ export default function ClientsPage() {
 
       {/* Table View */}
       {view === "table" && (
-        <div className="min-h-0 flex-1 overflow-auto">
-          <Card className="px-4 py-4 border border-border">
+        <div className="min-h-0 flex-1 space-y-4">
+          <Card className="border border-border overflow-hidden">
             <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Client</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Téléphone</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Statut</TableHead>
-                <TableHead className="text-right">Patrimoine</TableHead>
-                <TableHead className="w-10" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {clients.map((client) => (
-                <TableRow key={client.id} className="cursor-pointer" onClick={() => router.push(`/clients/${client.id}`)}>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold">
-                        {client.firstName[0]}
-                        {client.lastName[0]}
-                      </div>
-                      <span className="font-medium">
-                        {client.firstName} {client.lastName}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {client.email}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {client.phone}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="secondary" className="font-normal">
-                      {client.type}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="secondary"
-                      className={statusColor(client.status)}
-                    >
-                      {client.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right font-semibold">
-                    {formatPatrimoine(computePatrimoineNet(client.formData))}
-                  </TableCell>
-                  <TableCell onClick={(e) => e.stopPropagation()}>
-                    <ClientActions client={client} />
-                  </TableCell>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-10 pl-4 align-middle">
+                    <input
+                      type="checkbox"
+                      checked={allSelected}
+                      ref={(el) => { if (el) el.indeterminate = someSelected && !allSelected; }}
+                      onChange={toggleAll}
+                      className="size-4 rounded border-input accent-primary align-middle"
+                    />
+                  </TableHead>
+                  <TableHead>
+                    <button onClick={() => toggleSort("name")} className="inline-flex items-center font-medium">
+                      Client <SortIcon col="name" />
+                    </button>
+                  </TableHead>
+                  <TableHead>
+                    <button onClick={() => toggleSort("email")} className="inline-flex items-center font-medium">
+                      Email <SortIcon col="email" />
+                    </button>
+                  </TableHead>
+                  <TableHead>Téléphone</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>
+                    <button onClick={() => toggleSort("status")} className="inline-flex items-center font-medium">
+                      Statut <SortIcon col="status" />
+                    </button>
+                  </TableHead>
+                  <TableHead className="text-right">
+                    <button onClick={() => toggleSort("patrimoine")} className="inline-flex items-center font-medium ml-auto">
+                      Patrimoine <SortIcon col="patrimoine" />
+                    </button>
+                  </TableHead>
+                  <TableHead className="w-10" />
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Card>
+              </TableHeader>
+              <TableBody>
+                {filtered.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
+                      Aucun client trouvé.
+                    </TableCell>
+                  </TableRow>
+                )}
+                {filtered.map((client) => (
+                  <TableRow
+                    key={client.id}
+                    data-state={selectedIds.has(client.id) ? "selected" : undefined}
+                    className="cursor-pointer"
+                    onClick={() => router.push(`/clients/${client.id}`)}
+                  >
+                    <TableCell className="pl-4 align-middle" onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(client.id)}
+                        onChange={() => toggleOne(client.id)}
+                        className="size-4 rounded border-input accent-primary align-middle"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold">
+                          {client.firstName[0]}
+                          {client.lastName[0]}
+                        </div>
+                        <span className="font-medium">
+                          {client.firstName} {client.lastName}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {client.email}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {client.phone}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="secondary" className="font-normal">
+                        {client.type}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant="secondary"
+                        className={statusColor(client.status)}
+                      >
+                        {client.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right font-semibold">
+                      {formatPatrimoine(computePatrimoineNet(client.formData))}
+                    </TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <ClientActions client={client} />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Card>
+
+
         </div>
       )}
 

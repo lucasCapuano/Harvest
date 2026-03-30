@@ -22,16 +22,16 @@ function genId() { return String(nextId++); }
 
 function useCategoryRows(initial?: RowData[], liveOverride?: unknown[]) {
   const [rows, setRows] = useState<RowData[]>(() => initial ?? [{ id: genId() }]);
-  const liveLen = liveOverride?.length ?? 0;
-  const prevLiveLen = useRef(0);
+  const prevSnap = useRef("");
 
   useEffect(() => {
-    if (!liveOverride || liveLen === 0) return;
-    if (liveLen !== prevLiveLen.current) {
-      prevLiveLen.current = liveLen;
+    if (!liveOverride || liveOverride.length === 0) return;
+    const snap = JSON.stringify(liveOverride);
+    if (snap !== prevSnap.current) {
+      prevSnap.current = snap;
       setRows(liveOverride as RowData[]);
     }
-  }, [liveLen, liveOverride]);
+  }, [liveOverride]);
 
   const add = useCallback(() => setRows((p) => [...p, { id: genId() }]), []);
   const remove = useCallback((id: string) => setRows((p) => p.filter((r) => r.id !== id)), []);
@@ -48,23 +48,10 @@ const fields: FieldConfig[] = [
 ];
 
 export function ChargesStep() {
-  const { formData, liveMode } = useWizard();
-  const ctxCharges = liveMode ? (formData.charges as any) : null;
+  const { formData } = useWizard();
 
-  const generales = useCategoryRows(
-    liveMode ? undefined : [
-      { id: "c1", nature: "Impôt sur le revenu", libelle: "IR 2025", montant: "18 500" },
-      { id: "c2", nature: "Taxe foncière", libelle: "TF Appartement Paris", montant: "2 800" },
-      { id: "c3", nature: "Taxe foncière", libelle: "TF Maison Deauville", montant: "1 600" },
-    ],
-    ctxCharges?.chargesGenerales
-  );
-  const deductibles = useCategoryRows(
-    liveMode ? undefined : [
-      { id: "c4", nature: "Pension alimentaire", libelle: "Pension ex-conjoint", montant: "7 200" },
-    ],
-    ctxCharges?.chargesDeductibles
-  );
+  const generales = useCategoryRows(undefined, formData.charges.chargesGenerales);
+  const deductibles = useCategoryRows(undefined, formData.charges.chargesDeductibles);
   const [showConfirm, setShowConfirm] = useState(false);
 
   return (

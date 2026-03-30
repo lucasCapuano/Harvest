@@ -1,0 +1,93 @@
+Script started on Mon Mar 30 10:51:35 2026
+[1m[7m%[27m[1m[0m                                                                                [0m[27m[24m[Jlcapuano@mb-C2K391M6QW testshad % [K[?2004h[?2004l
+[1m[7m%[27m[1m[0m                                                                                [0m[27m[24m[Jlcapuano@mb-C2K391M6QW testshad % [K[?2004h  node test-parser.mjs 2>&1[?2004l
+=== All extracted pairs ===
+  "fiche client" => "Civilité : Monsieur"
+  "civilite" => "Madame"
+  "nom" => "Dupont"
+  "prenom" => "Marie"
+  "date de naissance" => "22/07/1978"
+  "profession (csp)" => "Profession libérale"
+  "profession (libelle)" => "Directeur commercial"
+  "telephone" => "06 12 34 56 78"
+  "situation familiale" => "Marié"
+  "conjoint" => "Civilité : Madame"
+  "enfants" => "Pierre – 12/03/2010"
+  "pierre" => "12/03/2010"
+  "pierre – 12/03/2010" => "Sophie – 15/09/2012"
+  "sophie" => "15/09/2012"
+  "sophie – 15/09/2012" => "Résidence principale"
+  "residence principale" => "Maison Neuilly : 850 000 €"
+  "revenus d'activite" => "Salaire JP Dupont : 78 000 €"
+  "salaire jp dupont" => "78 000 €"
+  "bnc cabinet marie dupont" => "95 000 €"
+  "charges" => "Impôt sur le revenu : 25 000 €"
+  "impot sur le revenu" => "25 000 €"
+  "taxe fonciere" => "3 500 €"
+
+=== Field lookups ===
+nom: Dupont
+prenom: Marie
+civilite: Madame
+dob: 22/07/1978
+csp: Profession libérale
+prof: Directeur commercial
+tel: 06 12 34 56 78
+email: [1mnull[22m
+sit fam: Marié
+[1m[7m%[27m[1m[0m                                                                                [0m[27m[24m[Jlcapuano@mb-C2K391M6QW testshad % [K[?2004h[?2004l
+[1m[7m%[27m[1m[0m                                                                                [0m[27m[24m[Jlcapuano@mb-C2K391M6QW testshad % [K[?2004h  npx tsc --noEmit 2>&1 | head -20[?2004l
+[1m[7m%[27m[1m[0m                                                                                [0m[27m[24m[Jlcapuano@mb-C2K391M6QW testshad % [K[?2004h[?2004l
+[1m[7m%[27m[1m[0m                                                                                [0m[27m[24m[Jlcapuano@mb-C2K391M6QW testshad % [K[?2004h  rm /Users/lcapuano/Desktop/Testshad/testshad/ [Kttest-parser.mjs[?2004l
+[1m[7m%[27m[1m[0m                                                                                [0m[27m[24m[Jlcapuano@mb-C2K391M6QW testshad % [K[?2004h[?2004l
+[1m[7m%[27m[1m[0m                                                                                [0m[27m[24m[Jlcapuano@mb-C2K391M6QW testshad % [K[?2004h  node test-parser.mjs[?2004l
+Partner index: [33m10[39m => Conjoint
+
+=== CLIENT pairs ===
+  [0] "fiche client" => "Civilité : Monsieur"
+  [1] "civilite" => "Monsieur"
+  [2] "nom" => "Dupont"
+  [3] "prenom" => "Jean-Pierre"
+  [4] "date de naissance" => "15/03/1975"
+  [5] "profession (csp)" => "Salarié cadre"
+  [6] "profession (libelle)" => "Directeur commercial"
+  [7] "telephone" => "06 12 34 56 78"
+  [8] "e-mail" => "jp.dupont@email.com"
+  [9] "situation familiale" => "Marié"
+
+=== CLIENT lookups ===
+nom: Dupont
+prenom: Jean-Pierre
+civilite: Monsieur
+dob: 15/03/1975
+csp: Salarié cadre
+prof: Directeur commercial
+tel: 06 12 34 56 78
+email: jp.dupont@email.com
+
+=== PARTNER pairs ===
+  [0] "conjoint" => "Civilité : Madame"
+  [1] "civilite" => "Madame"
+  [2] "nom" => "Dupont"
+  [3] "prenom" => "Marie"
+  [4] "date de naissance" => "22/07/1978"
+  [5] "profession (csp)" => "Profession libérale"
+  [6] "enfants" => "Pierre – 12/03/2010"
+  [7] "pierre – 12/03/2010" => "Sophie – 15/09/2012"
+  [8] "sophie – 15/09/2012" => "Résidence principale"
+  [9] "residence principale" => "Résidence principale - Maison Neuilly : 850 000 €"
+  [10] "residence principale - maison neuilly" => "850 000 €"
+  [11] "revenus d'activite" => "Salaire JP Dupont : 78 000 €"
+  [12] "salaire jp dupont" => "78 000 €"
+  [13] "bnc cabinet marie dupont" => "95 000 €"
+  [14] "charges" => "Impôt sur le revenu : 25 000 €"
+  [15] "impot sur le revenu" => "25 000 €"
+  [16] "taxe fonciere" => "3 500 €"
+
+=== PARTNER lookups ===
+nom: Dupont
+prenom: Marie
+civilite: Madame
+dob: 22/07/1978
+csp: Profession libérale
+[1m[7m%[27m[1m[0m                                                                                [0m[27m[24m[Jlcapuano@mb-C2K391M6QW testshad % [K[?2004h

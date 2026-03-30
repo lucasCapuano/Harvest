@@ -1,24 +1,26 @@
 "use client";
 
-import { use, useMemo } from "react";
+import { use, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AppLayout } from "@/components/app-layout";
+import { cn } from "@/lib/utils";
 import { useClients } from "@/lib/clients-store";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { RadarChart } from "@/components/radar-chart";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
-import { Bar, BarChart, CartesianGrid, Cell, Label, Line, LineChart, Pie, PieChart, PolarRadiusAxis, RadialBar, RadialBarChart, ReferenceLine, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, Cell, Label, Line, LineChart, Pie, PieChart, PolarAngleAxis, PolarGrid, Radar, RadarChart, PolarRadiusAxis, RadialBar, RadialBarChart, ReferenceLine, XAxis, YAxis } from "recharts";
 import {
   AlertTriangle,
   CheckCircle2,
   TrendingUp,
   Zap,
   Sparkles,
+  ArrowLeft,
   ArrowRight,
   CalendarDays,
   User,
@@ -37,7 +39,22 @@ import {
   Shield,
   Briefcase,
   Ellipsis,
+  Heart,
+  Scale,
+  ChevronRight,
+  Eye,
+  MessageSquareText,
+  Search,
+  BarChart3,
+  ChevronDown,
+  MoreHorizontal,
+  Check,
+  Video,
+  ListChecks,
+  Plus,
+  BookOpen,
 } from "lucide-react";
+import Link from "next/link";
 
 /* ── Derive Synthèse data from client formData ───────────── */
 
@@ -288,7 +305,7 @@ function EvolutionLineChart({ data }: { data: ReturnType<typeof deriveClientData
         <CardDescription className="text-xs">12 derniers mois</CardDescription>
       </CardHeader>
       <CardContent>
-        <ChartContainer config={evolutionChartConfig}>
+        <ChartContainer config={evolutionChartConfig} className="h-[200px] w-full">
           <LineChart
             accessibilityLayer
             data={chartData}
@@ -647,6 +664,201 @@ function buildWealthDiagnostic(form: import("@/lib/clients-store").FormState) {
   return { maturity, globalScore };
 }
 
+/* ── Category analysis items builder ─────────────────────── */
+
+interface AnalysisItem {
+  title: string;
+  priority: "haute" | "moyenne" | "basse";
+  status: "À revoir" | "Alerte" | "Opportunité" | "Conforme" | "Insuffisant" | "Sans couvert";
+  metric: string;
+  metricLabel: string;
+  description: string;
+  cta: string;
+}
+
+interface CategoryAnalysis {
+  category: string;
+  score: number;
+  items: AnalysisItem[];
+}
+
+function statusStyle(s: AnalysisItem["status"]) {
+  switch (s) {
+    case "À revoir": return "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400";
+    case "Alerte": return "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400";
+    case "Opportunité": return "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400";
+    case "Conforme": return "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400";
+    case "Insuffisant": return "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400";
+    case "Sans couvert": return "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400";
+  }
+}
+
+function priorityStyle(p: AnalysisItem["priority"]) {
+  switch (p) {
+    case "haute": return "border border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/20";
+    case "moyenne": return "border border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/20";
+    case "basse": return "border border-green-300 bg-green-50 dark:border-green-800 dark:bg-green-950/20";
+  }
+}
+
+function priorityBadge(p: AnalysisItem["priority"]) {
+  switch (p) {
+    case "haute": return "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400";
+    case "moyenne": return "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400";
+    case "basse": return "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400";
+  }
+}
+
+function buildCategoryAnalysis(
+  form: import("@/lib/clients-store").FormState,
+  data: ReturnType<typeof deriveClientData>,
+  diagnostic: { maturity: Record<string, number>; globalScore: number }
+): CategoryAnalysis[] {
+  const inputs = buildInputs(form);
+  const categories: CategoryAnalysis[] = [];
+
+  // Transmission
+  {
+    const items: AnalysisItem[] = [];
+    if (inputs.hasLifeInsurance) {
+      items.push({
+        title: "Clause bénéficiaire",
+        priority: inputs.totalInsuranceAssets < 100000 ? "haute" : "moyenne",
+        status: inputs.totalInsuranceAssets < 100000 ? "À revoir" : "Conforme",
+        metric: fmt(inputs.totalInsuranceAssets),
+        metricLabel: "Encours assurance-vie",
+        description: inputs.totalInsuranceAssets < 100000
+          ? "Vos contrats d'assurance-vie nécessitent une révision des clauses bénéficiaires."
+          : "Vos clauses bénéficiaires sont cohérentes avec votre situation familiale.",
+        cta: "Optimiser la transmission",
+      });
+    } else {
+      items.push({
+        title: "Assurance-vie",
+        priority: "haute",
+        status: "À revoir",
+        metric: "0 €",
+        metricLabel: "Aucun contrat",
+        description: "Aucune assurance-vie détectée. Cet outil est essentiel pour optimiser la transmission.",
+        cta: "Ouvrir une assurance-vie",
+      });
+    }
+    if (inputs.childrenCount > 0) {
+      items.push({
+        title: "Donation anticipée",
+        priority: "moyenne",
+        status: inputs.netWorth > 300000 ? "Opportunité" : "Conforme",
+        metric: fmt(inputs.netWorth),
+        metricLabel: "Patrimoine net transmissible",
+        description: inputs.netWorth > 300000
+          ? "Les abattements fiscaux sont disponibles. Une donation peut réduire les droits de succession."
+          : "Votre patrimoine est en deçà des seuils d'optimisation fiscale.",
+        cta: "Étudier les donations",
+      });
+    }
+    categories.push({ category: "Transmission", score: diagnostic.maturity["Transmission"] ?? 0, items });
+  }
+
+  // Fiscalité
+  {
+    const tmi = inputs.totalIncome > 0 ? Math.round((inputs.totalCharges / inputs.totalIncome) * 100) : 0;
+    const items: AnalysisItem[] = [{
+      title: "Pression fiscale",
+      priority: !inputs.hasDefiscalisationProducts ? "haute" : "moyenne",
+      status: !inputs.hasDefiscalisationProducts ? "Alerte" : "Conforme",
+      metric: fmt(inputs.totalCharges) + "/an",
+      metricLabel: "Charges fiscales estimées",
+      description: !inputs.hasDefiscalisationProducts
+        ? `Votre taux marginal d'imposition est de ${tmi} %. Des dispositifs de réduction existent.`
+        : "Vous disposez déjà de produits de défiscalisation en portefeuille.",
+      cta: "Explorer les leviers fiscaux",
+    }];
+    categories.push({ category: "Fiscalité", score: diagnostic.maturity["Fiscalité"] ?? 0, items });
+  }
+
+  // Composition
+  {
+    const items: AnalysisItem[] = [];
+    const immoRate = inputs.totalAssets > 0 ? Math.round((data.actifs.immobilier.total / inputs.totalAssets) * 100) : 0;
+    items.push({
+      title: "Diversification",
+      priority: immoRate > 70 ? "haute" : "basse",
+      status: immoRate > 70 ? "À revoir" : "Conforme",
+      metric: `-${immoRate} %`,
+      metricLabel: "Exposition immobilière à réduire",
+      description: immoRate > 70
+        ? `Plus de ${immoRate} % de votre patrimoine est concentré en immobilier, exposant à un risque de liquidité.`
+        : "Votre patrimoine est correctement diversifié entre les différentes classes d'actifs.",
+      cta: "Rééquilibrer l'allocation",
+    });
+    const monthsCovered = inputs.totalCharges > 0 ? Math.round((data.actifs.epargne.disponibilites / (inputs.totalCharges / 12))) : 0;
+    items.push({
+      title: "Épargne disponible",
+      priority: monthsCovered < 3 ? "moyenne" : "basse",
+      status: monthsCovered < 3 ? "Alerte" : "Conforme",
+      metric: fmt(data.actifs.epargne.disponibilites),
+      metricLabel: "Épargne de précaution",
+      description: monthsCovered < 3
+        ? `Votre épargne de précaution couvre ${monthsCovered} mois de charges, un niveau faible.`
+        : `Votre épargne de précaution couvre ${monthsCovered} mois de charges, un niveau sain.`,
+      cta: "Voir le détail",
+    });
+    categories.push({ category: "Composition", score: diagnostic.maturity["Composition"] ?? 0, items });
+  }
+
+  // Revenus
+  {
+    const savingsRate = inputs.totalIncome > 0 ? Math.round(((inputs.totalIncome - inputs.totalCharges) / inputs.totalIncome) * 100) : 0;
+    const items: AnalysisItem[] = [{
+      title: "Taux d'épargne",
+      priority: savingsRate < 10 ? "haute" : "basse",
+      status: savingsRate < 10 ? "Alerte" : "Conforme",
+      metric: fmt(Math.round((inputs.totalIncome - inputs.totalCharges) / 12)) + "/mois",
+      metricLabel: "Capacité d'investissement",
+      description: `Votre capacité d'épargne mensuelle représente ${savingsRate} % de vos revenus nets${savingsRate >= 15 ? ", un bon ratio." : ", à optimiser."}`,
+      cta: "Optimiser le placement",
+    }];
+    categories.push({ category: "Revenus", score: diagnostic.maturity["Revenus"] ?? 0, items });
+  }
+
+  // Retraite
+  {
+    const age = ageFromDate(form.situationPersonnelle.dateNaissance) ?? 0;
+    const retirementGap = Math.max(0, Math.round(inputs.totalActivityIncome * 0.55 / 12));
+    const items: AnalysisItem[] = [{
+      title: "Gap retraite",
+      priority: !inputs.hasRetirementSavings ? "haute" : "moyenne",
+      status: !inputs.hasRetirementSavings ? "Insuffisant" : "Opportunité",
+      metric: fmt(retirementGap) + "/mois",
+      metricLabel: "Revenus manquants estimés",
+      description: !inputs.hasRetirementSavings
+        ? "Une baisse de revenus de 45 % est estimée au départ en retraite sans complément."
+        : `Votre épargne retraite de ${fmt(inputs.totalRetirementAssets)} complétera partiellement vos revenus.`,
+      cta: "Simuler la retraite",
+    }];
+    categories.push({ category: "Retraite", score: diagnostic.maturity["Retraite"] ?? 0, items });
+  }
+
+  // Prévoyance
+  {
+    const capitalNeeded = inputs.totalActivityIncome * 5;
+    const items: AnalysisItem[] = [{
+      title: "Couverture décès",
+      priority: inputs.totalInsuranceAssets < capitalNeeded ? "haute" : "basse",
+      status: inputs.totalInsuranceAssets < capitalNeeded ? "Sans couvert" : "Conforme",
+      metric: fmt(Math.max(0, capitalNeeded - inputs.totalInsuranceAssets)),
+      metricLabel: "Capital manquant",
+      description: inputs.totalInsuranceAssets < capitalNeeded
+        ? `En cas de décès, le capital garanti ne couvrirait que ${Math.round(inputs.totalInsuranceAssets / (inputs.totalCharges / 12))} mois de charges familiales.`
+        : "Le capital décès couvre les besoins de votre famille sur une durée satisfaisante.",
+      cta: "Renforcer la prévoyance",
+    }];
+    categories.push({ category: "Prévoyance", score: diagnostic.maturity["Prévoyance"] ?? 0, items });
+  }
+
+  return categories;
+}
+
 function scoreColor(v: number) {
   if (v >= 70) return "bg-green-500";
   if (v >= 50) return "bg-amber-400";
@@ -657,6 +869,196 @@ function scoreBg(v: number) {
   if (v >= 70) return "bg-green-500/20";
   if (v >= 50) return "bg-amber-400/20";
   return "bg-red-400/20";
+}
+
+/* ── Tag color mapping ───────────────────────────────────── */
+const tagColors: Record<string, string> = {
+  Transmission: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+  Fiscalité: "bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-400",
+  Composition: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400",
+  Revenus: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
+  Retraite: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
+  Prévoyance: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400",
+};
+
+/* ── Remarques data ──────────────────────────────────────── */
+interface Remarque {
+  title: string;
+  description: string;
+  done: boolean;
+  assignee: string;
+}
+
+function buildRemarques(cats: CategoryAnalysis[]): Remarque[] {
+  return cats.flatMap((cat) =>
+    cat.items.map((item, i) => ({
+      title: `${cat.category} — ${item.title}`,
+      description: item.description,
+      done: item.status === "Conforme",
+      assignee: "Conseiller",
+    }))
+  );
+}
+
+/* ── DiagnostiqueContent component ───────────────────────── */
+function DiagnostiqueContent({ categoryAnalysis }: { categoryAnalysis: CategoryAnalysis[] }) {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCat, setSelectedCat] = useState<string | null>(null);
+
+  const allObjectives = categoryAnalysis
+    .filter((c) => !selectedCat || c.category === selectedCat)
+    .flatMap((cat) =>
+      cat.items.map((item) => ({ ...item, category: cat.category }))
+    )
+    .filter((item) =>
+      !searchQuery || item.title.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+  const remarques = buildRemarques(categoryAnalysis);
+
+  return (
+    <div className="grid grid-cols-2 gap-4">
+      {/* ── Left: Objectifs card ── */}
+      <Card className="flex flex-col overflow-hidden">
+        <CardHeader>
+          <div className="flex items-start justify-between">
+            <div className="flex flex-col gap-1">
+              <CardTitle className="flex items-center gap-2 text-sm">
+                <BarChart3 className="size-4" />
+                Objectifs du diagnostic
+              </CardTitle>
+              <CardDescription className="text-xs">
+                Mis à jour le {new Date().toLocaleDateString("fr-FR")}
+              </CardDescription>
+            </div>
+            <Button variant="outline" size="sm" className="text-xs">
+              <Plus className="mr-1 size-3" />
+              Ajouter
+            </Button>
+          </div>
+
+          {/* Search + filter bar */}
+          <div className="flex items-center gap-3 pt-4">
+            <div className="flex flex-1 items-center overflow-hidden rounded-lg border">
+              <Select
+                value={selectedCat ?? "__all__"}
+                onValueChange={(v) => setSelectedCat(v === "__all__" ? null : v)}
+              >
+                <SelectTrigger className="w-[160px] rounded-none border-0 border-r bg-muted text-xs font-medium">
+                  <SelectValue placeholder="All categories" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">Toutes catégories</SelectItem>
+                  {categoryAnalysis.map((cat) => (
+                    <SelectItem key={cat.category} value={cat.category}>
+                      {cat.category}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <div className="flex flex-1 items-center gap-2 px-3">
+                <Search className="size-4 text-muted-foreground" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Rechercher"
+                  className="h-10 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                />
+              </div>
+            </div>
+            <Button size="icon" className="shrink-0">
+              <Search className="size-4" />
+            </Button>
+          </div>
+        </CardHeader>
+
+        <CardContent className="flex-1 space-y-4 overflow-y-auto">
+          {allObjectives.map((item) => (
+            <div key={item.title} className="rounded-lg border p-5 space-y-3">
+              {/* Title row: title + tag + status + menu */}
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-base font-semibold text-foreground">{item.title}</p>
+                  <Badge
+                    className={cn(
+                      "gap-1 text-[11px]",
+                      tagColors[item.category] ?? "bg-muted text-muted-foreground"
+                    )}
+                  >
+                    <BookOpen className="size-3" />
+                    {item.category}
+                  </Badge>
+                  <Badge variant="outline" className="gap-1 text-[11px]">
+                    <span className="size-1.5 rounded-full bg-muted-foreground" />
+                    {item.status}
+                  </Badge>
+                </div>
+                <Button variant="ghost" size="icon" className="size-7 shrink-0">
+                  <MoreHorizontal className="size-4" />
+                </Button>
+              </div>
+              {/* Description */}
+              <p className="text-sm text-muted-foreground leading-relaxed">{item.description}</p>
+              {/* Bottom pill */}
+              <div className="flex items-center">
+                <span className="inline-flex items-center gap-1.5 rounded-full border bg-muted px-2.5 py-0.5 text-xs text-foreground">
+                  <Video className="size-3.5" />
+                  {item.metricLabel} — {item.metric}
+                </span>
+              </div>
+            </div>
+          ))}
+          {allObjectives.length === 0 && (
+            <p className="text-center text-sm text-muted-foreground py-8">Aucun objectif trouvé</p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ── Right: Remarques pour rapport ── */}
+      <Card className="flex flex-col overflow-hidden">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <ListChecks className="size-4" />
+              Remarques pour rapport
+            </CardTitle>
+            <Button variant="ghost" size="icon" className="size-7">
+              <MoreHorizontal className="size-4" />
+            </Button>
+          </div>
+        </CardHeader>
+
+        <CardContent className="flex-1 space-y-3 overflow-y-auto">
+          {remarques.map((r, i) => (
+            <div key={i} className="flex items-center gap-4 rounded-lg bg-muted/50 p-4">
+              {/* Check circle */}
+              <div
+                className={cn(
+                  "flex size-5 shrink-0 items-center justify-center rounded-full",
+                  r.done
+                    ? "bg-green-600 text-white"
+                    : "border-2 border-muted-foreground/30"
+                )}
+              >
+                {r.done && <Check className="size-3" />}
+              </div>
+              {/* Title + description */}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-foreground truncate">{r.title}</p>
+                <p className="text-sm text-muted-foreground truncate">{r.description}</p>
+              </div>
+              {/* Assignee badge */}
+              <Badge variant="outline" className="shrink-0 gap-1 text-[11px]">
+                {r.assignee}
+                <ChevronDown className="size-3" />
+              </Badge>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+    </div>
+  );
 }
 
 export default function ClientDetailPage({
@@ -687,10 +1089,19 @@ export default function ClientDetailPage({
   const diagDate = "23 mars 2026";
   const data = deriveClientData(client.formData);
   const diagnostic = buildWealthDiagnostic(client.formData);
+  const categoryAnalysis = buildCategoryAnalysis(client.formData, data, diagnostic);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   return (
     <AppLayout
-      title={displayName}
+      title={
+        <span className="flex items-center gap-2">
+          <Link href="/clients" className="text-muted-foreground hover:text-foreground transition-colors">
+            <ArrowLeft className="size-5" />
+          </Link>
+          {displayName}
+        </span>
+      }
       subtitle={
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
           <Separator orientation="vertical" className="!h-3" />
@@ -722,7 +1133,7 @@ export default function ClientDetailPage({
           <div className="flex items-center justify-between">
             <TabsList className="gap-2">
               <TabsTrigger value="overview">Synthèse</TabsTrigger>
-              <TabsTrigger value="sensibilisation">Sensibilisation</TabsTrigger>
+              <TabsTrigger value="objectifs">Objectifs</TabsTrigger>
               <TabsTrigger value="diagnostique">Diagnostique</TabsTrigger>
               <TabsTrigger value="preconisations">Préconisations</TabsTrigger>
             </TabsList>
@@ -767,11 +1178,210 @@ export default function ClientDetailPage({
               </Card>
             </div>
 
-            {/* ── Main content: info cards | line chart | pie chart ── */}
+            {/* ── Row 2: Répartition | Actifs immobiliers | Épargne | Radar ── */}
             <div className="grid grid-cols-4 items-stretch gap-4">
-              {/* ── Column 1: 2 stacked compact cards ──── */}
+              {/* Répartition du patrimoine */}
+              <PatrimoinePieChart data={data} />
+
+              {/* Actifs immobiliers */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                    <Home className="size-3.5" />
+                    Actifs immobiliers
+                  </div>
+                  <p className="mt-3 text-2xl font-bold">{fmt(data.actifs.immobilier.total)}</p>
+                </CardHeader>
+                <CardContent className="space-y-5 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Biens d&apos;usage</span>
+                    <span className="font-medium">{fmt(data.actifs.immobilier.biensUsage)}</span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div className="h-full rounded-full bg-viz" style={{ width: `${data.actifs.immobilier.total > 0 ? (data.actifs.immobilier.biensUsage / data.actifs.immobilier.total) * 100 : 0}%` }} />
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Immobilier de rapport</span>
+                    <span className="font-medium">{fmt(data.actifs.immobilier.immobilierRapport)}</span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div className="h-full rounded-full bg-viz/60" style={{ width: `${data.actifs.immobilier.total > 0 ? (data.actifs.immobilier.immobilierRapport / data.actifs.immobilier.total) * 100 : 0}%` }} />
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Défiscalisant</span>
+                    <span className="font-medium">{fmt(data.actifs.immobilier.immobilierDefisc)}</span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div className="h-full rounded-full bg-viz/30" style={{ width: `${data.actifs.immobilier.total > 0 ? (data.actifs.immobilier.immobilierDefisc / data.actifs.immobilier.total) * 100 : 0}%` }} />
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Épargne & Prévoyance */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                    <PiggyBank className="size-3.5" />
+                    Épargne & Prévoyance
+                  </div>
+                  <p className="mt-3 text-2xl font-bold">{fmt(data.actifs.epargne.total)}</p>
+                </CardHeader>
+                <CardContent className="space-y-5 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Disponibilités</span>
+                    <span className="font-medium">{fmt(data.actifs.epargne.disponibilites)}</span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div className="h-full rounded-full bg-viz" style={{ width: `${data.actifs.epargne.total > 0 ? (data.actifs.epargne.disponibilites / data.actifs.epargne.total) * 100 : 0}%` }} />
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Assurance-vie</span>
+                    <span className="font-medium">{fmt(data.actifs.epargne.assuranceVie)}</span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div className="h-full rounded-full bg-viz/70" style={{ width: `${data.actifs.epargne.total > 0 ? (data.actifs.epargne.assuranceVie / data.actifs.epargne.total) * 100 : 0}%` }} />
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Épargne retraite</span>
+                    <span className="font-medium">{fmt(data.actifs.epargne.epargneRetraite)}</span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div className="h-full rounded-full bg-viz/45" style={{ width: `${data.actifs.epargne.total > 0 ? (data.actifs.epargne.epargneRetraite / data.actifs.epargne.total) * 100 : 0}%` }} />
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Défiscalisation</span>
+                    <span className="font-medium">{fmt(data.actifs.epargne.defiscalisation)}</span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div className="h-full rounded-full bg-viz/20" style={{ width: `${data.actifs.epargne.total > 0 ? (data.actifs.epargne.defiscalisation / data.actifs.epargne.total) * 100 : 0}%` }} />
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Radar client */}
+              <Card className="flex flex-col">
+                <CardHeader className="items-center pb-2">
+                  <CardTitle className="flex items-center gap-2 text-sm">
+                    <Sparkles className="size-4" />
+                    Radar client
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="flex-1 pb-2">
+                  <ChartContainer
+                    config={{
+                      score: { label: "Score", color: "var(--primary)" },
+                    } satisfies ChartConfig}
+                    className="mx-auto aspect-square max-h-[300px]"
+                  >
+                    <RadarChart data={Object.entries(diagnostic.maturity).map(([subject, score]) => ({ subject, score }))} outerRadius="65%">
+                      <ChartTooltip
+                        cursor={false}
+                        content={<ChartTooltipContent indicator="line" />}
+                      />
+                      <PolarAngleAxis dataKey="subject" tick={{ fontSize: 10 }} />
+                      <PolarGrid radialLines={false} />
+                      <Radar
+                        dataKey="score"
+                        fill="var(--color-score)"
+                        fillOpacity={0.15}
+                        stroke="var(--color-score)"
+                        strokeWidth={2}
+                      />
+                    </RadarChart>
+                  </ChartContainer>
+                  <p className="mt-1 flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground">
+                    <span className="size-2.5 rounded-full bg-primary" />
+                    État du patrimoine
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* ── Row 3: Passifs | Revenus | Situation+Composition | Score ── */}
+            <div className="grid grid-cols-4 items-stretch gap-4">
+              {/* Passifs */}
+              <Card className="flex flex-col">
+                <CardHeader className="pb-0">
+                  <CardTitle className="flex items-center gap-2 text-sm">
+                    <Shield className="size-4" />
+                    Passifs
+                  </CardTitle>
+                  <CardDescription className="text-xs">{fmt(data.passifs.total)}</CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-1 flex-col items-center justify-center pb-2">
+                  <ChartContainer
+                    config={{
+                      pretImmo: { label: "Prêt immobilier", color: "oklch(var(--viz))" },
+                      pretPro: { label: "Prêt professionnel", color: "oklch(var(--viz) / 0.5)" },
+                      autresPrets: { label: "Autres prêts", color: "oklch(var(--viz) / 0.2)" },
+                    } satisfies ChartConfig}
+                    className="mx-auto h-[160px] w-full"
+                  >
+                    <RadialBarChart
+                      data={[{
+                        pretImmo: data.passifs.pretImmo,
+                        pretPro: data.passifs.pretPro,
+                        autresPrets: data.passifs.autresPrets,
+                      }]}
+                      endAngle={180}
+                      innerRadius={80}
+                      outerRadius={110}
+                      cy="70%"
+                    >
+                      <RadialBar dataKey="autresPrets" fill="oklch(var(--viz) / 0.2)" stackId="a" cornerRadius={5} className="stroke-transparent stroke-2" />
+                      <RadialBar dataKey="pretPro" fill="oklch(var(--viz) / 0.5)" stackId="a" cornerRadius={5} className="stroke-transparent stroke-2" />
+                      <RadialBar dataKey="pretImmo" fill="oklch(var(--viz))" stackId="a" cornerRadius={5} className="stroke-transparent stroke-2" />
+                      <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
+                      <PolarRadiusAxis tick={false} tickLine={false} axisLine={false}>
+                        <Label
+                          content={({ viewBox }) => {
+                            if (viewBox && "cx" in viewBox && "cy" in viewBox) {
+                              return (
+                                <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle">
+                                  <tspan
+                                    x={viewBox.cx}
+                                    y={(viewBox.cy || 0) - 16}
+                                    className="fill-foreground text-2xl font-bold"
+                                  >
+                                    {fmt(data.passifs.total)}
+                                  </tspan>
+                                  <tspan
+                                    x={viewBox.cx}
+                                    y={(viewBox.cy || 0) + 4}
+                                    className="fill-muted-foreground text-xs"
+                                  >
+                                    Total passifs
+                                  </tspan>
+                                </text>
+                              );
+                            }
+                          }}
+                        />
+                      </PolarRadiusAxis>
+                    </RadialBarChart>
+                  </ChartContainer>
+                  <div className="mt-auto flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs">
+                    <span className="flex items-center gap-1.5">
+                      <span className="size-2.5 rounded-full" style={{ background: "oklch(var(--viz))" }} />
+                      <span className="text-muted-foreground">Prêt immobilier</span>
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="size-2.5 rounded-full" style={{ background: "oklch(var(--viz) / 0.5)" }} />
+                      <span className="text-muted-foreground">Prêt professionnel</span>
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="size-2.5 rounded-full" style={{ background: "oklch(var(--viz) / 0.2)" }} />
+                      <span className="text-muted-foreground">Autres prêts</span>
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Revenus & Charges */}
+              <RevenusWaterfallChart data={data} />
+
+              {/* Situation personnelle + Composition familiale */}
               <div className="flex flex-col gap-4">
-                {/* Situation personnelle */}
                 <Card className="px-4 py-3">
                   <div className="flex items-center gap-2 text-sm font-semibold mb-3">
                     <User className="size-4" />
@@ -792,15 +1402,9 @@ export default function ClientDetailPage({
                       <span className="text-muted-foreground">Situation</span>
                       <span className="font-medium">{data.situation}</span>
                     </div>
-                    <Separator />
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Type</span>
-                      <Badge variant="outline" className="text-xs">{client.type}</Badge>
-                    </div>
                   </div>
                 </Card>
 
-                {/* Composition familiale */}
                 <Card className="flex-1 px-4 py-3">
                   <div className="flex items-center gap-2 text-sm font-semibold mb-3">
                     <Users className="size-4" />
@@ -861,165 +1465,71 @@ export default function ClientDetailPage({
                         <span className="font-medium">{data.nbEnfants}</span>
                       </div>
                     </div>
-                    {data.nbEnfants > 0 && (
-                      <>
-                        <Separator />
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Âges</span>
-                          <span className="font-medium">{data.enfantsAges.join(", ")} ans</span>
-                        </div>
-                      </>
-                    )}
                   </div>
                 </Card>
               </div>
 
-              {/* ── Column 2: Interactive line chart ── */}
-              <div className="col-span-2 flex">
-                <EvolutionLineChart data={data} />
-              </div>
-
-              {/* ── Column 3: Donut pie chart ── */}
-              <PatrimoinePieChart data={data} />
-            </div>
-
-            {/* ── Actifs, Passifs & Revenus breakdown ──────────── */}
-            <div className="grid grid-cols-4 items-stretch gap-4">
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2 text-sm">
-                    <Home className="size-4" />
-                    Actifs immobiliers
-                  </CardTitle>
-                  <CardDescription className="text-xs">{fmt(data.actifs.immobilier.total)}</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Biens d&apos;usage</span>
-                    <span className="font-medium">{fmt(data.actifs.immobilier.biensUsage)}</span>
-                  </div>
-                  <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                    <div className="h-full rounded-full bg-viz" style={{ width: `${(data.actifs.immobilier.biensUsage / data.actifs.immobilier.total) * 100}%` }} />
-                  </div>
-                  {data.actifs.immobilier.immobilierRapport > 0 && (
-                    <>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Immobilier de rapport</span>
-                        <span className="font-medium">{fmt(data.actifs.immobilier.immobilierRapport)}</span>
-                      </div>
-                      <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                        <div className="h-full rounded-full bg-viz/60" style={{ width: `${(data.actifs.immobilier.immobilierRapport / data.actifs.immobilier.total) * 100}%` }} />
-                      </div>
-                    </>
-                  )}
-                  {data.actifs.immobilier.immobilierDefisc > 0 && (
-                    <>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Défiscalisant</span>
-                        <span className="font-medium">{fmt(data.actifs.immobilier.immobilierDefisc)}</span>
-                      </div>
-                      <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                        <div className="h-full rounded-full bg-viz/30" style={{ width: `${(data.actifs.immobilier.immobilierDefisc / data.actifs.immobilier.total) * 100}%` }} />
-                      </div>
-                    </>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2 text-sm">
-                    <PiggyBank className="size-4" />
-                    Épargne & Prévoyance
-                  </CardTitle>
-                  <CardDescription className="text-xs">{fmt(data.actifs.epargne.total)}</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Disponibilités</span>
-                    <span className="font-medium">{fmt(data.actifs.epargne.disponibilites)}</span>
-                  </div>
-                  <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                    <div className="h-full rounded-full bg-viz" style={{ width: `${(data.actifs.epargne.disponibilites / data.actifs.epargne.total) * 100}%` }} />
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Assurance-vie</span>
-                    <span className="font-medium">{fmt(data.actifs.epargne.assuranceVie)}</span>
-                  </div>
-                  <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                    <div className="h-full rounded-full bg-viz/70" style={{ width: `${(data.actifs.epargne.assuranceVie / data.actifs.epargne.total) * 100}%` }} />
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Épargne retraite</span>
-                    <span className="font-medium">{fmt(data.actifs.epargne.epargneRetraite)}</span>
-                  </div>
-                  <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                    <div className="h-full rounded-full bg-viz/45" style={{ width: `${(data.actifs.epargne.epargneRetraite / data.actifs.epargne.total) * 100}%` }} />
-                  </div>
-                  {data.actifs.epargne.defiscalisation > 0 && (
-                    <>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Défiscalisation</span>
-                        <span className="font-medium">{fmt(data.actifs.epargne.defiscalisation)}</span>
-                      </div>
-                      <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                        <div className="h-full rounded-full bg-viz/20" style={{ width: `${(data.actifs.epargne.defiscalisation / data.actifs.epargne.total) * 100}%` }} />
-                      </div>
-                    </>
-                  )}
-                </CardContent>
-              </Card>
-
+              {/* Score patrimonial */}
               <Card className="flex flex-col">
-                <CardHeader className="pb-0">
+                <CardHeader className="flex flex-row items-center justify-between pb-0">
                   <CardTitle className="flex items-center gap-2 text-sm">
-                    <Shield className="size-4" />
-                    Passifs
+                    <Sparkles className="size-4" />
+                    Score patrimonial
                   </CardTitle>
-                  <CardDescription className="text-xs">{fmt(data.passifs.total)}</CardDescription>
+                  <Badge
+                    variant="outline"
+                    className={
+                      diagnostic.globalScore >= 70
+                        ? "border-green-500/30 bg-green-500/10 text-green-500"
+                        : diagnostic.globalScore >= 50
+                          ? "border-yellow-500/30 bg-yellow-500/10 text-yellow-500"
+                          : "border-red-500/30 bg-red-500/10 text-red-500"
+                    }
+                  >
+                    {diagnostic.globalScore >= 70 ? "Patrimoine sain" : diagnostic.globalScore >= 50 ? "À optimiser" : "Actions urgentes"}
+                  </Badge>
                 </CardHeader>
-                <CardContent className="flex flex-1 flex-col items-center justify-center pb-2">
+                <CardContent className="flex flex-1 flex-col items-center justify-center pb-4">
                   <ChartContainer
                     config={{
-                      pretImmo: { label: "Prêt immobilier", color: "oklch(var(--viz))" },
-                      pretPro: { label: "Prêt professionnel", color: "oklch(var(--viz) / 0.5)" },
-                      autresPrets: { label: "Autres prêts", color: "oklch(var(--viz) / 0.2)" },
+                      score: { label: "Score", color: diagnostic.globalScore >= 70 ? "oklch(0.723 0.191 142.7)" : diagnostic.globalScore >= 50 ? "oklch(0.795 0.184 86.047)" : "oklch(0.637 0.237 25.331)" },
                     } satisfies ChartConfig}
-                    className="mx-auto aspect-square w-full max-w-[220px]"
+                    className="mx-auto aspect-square w-full max-w-[150px]"
                   >
                     <RadialBarChart
-                      data={[{
-                        pretImmo: data.passifs.pretImmo,
-                        pretPro: data.passifs.pretPro,
-                        autresPrets: data.passifs.autresPrets,
-                      }]}
-                      endAngle={180}
-                      innerRadius={80}
-                      outerRadius={110}
+                      data={[{ browser: "score", visitors: diagnostic.globalScore, fill: "var(--color-score)" }]}
+                      startAngle={0}
+                      endAngle={Math.round((diagnostic.globalScore / 100) * 360)}
+                      innerRadius={55}
+                      outerRadius={70}
                     >
-                      <RadialBar dataKey="autresPrets" fill="oklch(var(--viz) / 0.2)" stackId="a" cornerRadius={5} className="stroke-transparent stroke-2" />
-                      <RadialBar dataKey="pretPro" fill="oklch(var(--viz) / 0.5)" stackId="a" cornerRadius={5} className="stroke-transparent stroke-2" />
-                      <RadialBar dataKey="pretImmo" fill="oklch(var(--viz))" stackId="a" cornerRadius={5} className="stroke-transparent stroke-2" />
-                      <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
+                      <PolarGrid
+                        gridType="circle"
+                        radialLines={false}
+                        stroke="none"
+                        className="first:fill-muted last:fill-background"
+                        polarRadius={[70, 55]}
+                      />
+                      <RadialBar dataKey="visitors" cornerRadius={10} />
                       <PolarRadiusAxis tick={false} tickLine={false} axisLine={false}>
                         <Label
                           content={({ viewBox }) => {
                             if (viewBox && "cx" in viewBox && "cy" in viewBox) {
                               return (
-                                <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle">
+                                <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle" dominantBaseline="middle">
                                   <tspan
                                     x={viewBox.cx}
-                                    y={(viewBox.cy || 0) - 16}
+                                    y={viewBox.cy}
                                     className="fill-foreground text-2xl font-bold"
                                   >
-                                    {fmt(data.passifs.total)}
+                                    {diagnostic.globalScore}
                                   </tspan>
                                   <tspan
                                     x={viewBox.cx}
-                                    y={(viewBox.cy || 0) + 4}
+                                    y={(viewBox.cy || 0) + 20}
                                     className="fill-muted-foreground text-xs"
                                   >
-                                    Total passifs
+                                    / 100
                                   </tspan>
                                 </text>
                               );
@@ -1029,98 +1539,51 @@ export default function ClientDetailPage({
                       </PolarRadiusAxis>
                     </RadialBarChart>
                   </ChartContainer>
-                  <div className="mt-auto flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs">
-                    <span className="flex items-center gap-1.5">
-                      <span className="size-2.5 rounded-full" style={{ background: "oklch(var(--viz))" }} />
-                      <span className="text-muted-foreground">Prêt immobilier</span>
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                      <span className="size-2.5 rounded-full" style={{ background: "oklch(var(--viz) / 0.5)" }} />
-                      <span className="text-muted-foreground">Prêt professionnel</span>
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                      <span className="size-2.5 rounded-full" style={{ background: "oklch(var(--viz) / 0.2)" }} />
-                      <span className="text-muted-foreground">Autres prêts</span>
-                    </span>
-                  </div>
                 </CardContent>
               </Card>
-
-              <RevenusWaterfallChart data={data} />
-            </div>
-          </TabsContent>
-
-          <TabsContent value="sensibilisation" className="mt-6 space-y-8">
-
-        {/* ── Diagnostic patrimonial ─────────────────────────── */}
-        <Card className="px-0 py-0 overflow-hidden">
-          <div className="grid grid-cols-2 divide-x divide-border">
-            {/* Left: Radar Chart */}
-            <div className="flex items-center justify-center p-8">
-              <RadarChart scores={diagnostic.maturity} size={280} />
             </div>
 
-            {/* Right: Scores */}
-            <div className="p-8 space-y-5">
-              <div className="space-y-1">
-                <div className="flex items-center gap-3">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-[#0052CC]">
-                    Vue d&apos;ensemble
-                  </p>
-                  <Badge className="gap-1 bg-muted text-muted-foreground border-transparent text-[11px]">
-                    <Sparkles className="size-3" />
-                    Modélisation IA
-                  </Badge>
-                </div>
-                <h2 className="text-lg font-bold">Diagnostic patrimonial</h2>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  Score calculé par intelligence artificielle à partir de vos données patrimoniales.
-                  Plus la surface est large, meilleure est votre situation.
-                </p>
-              </div>
-
-              {/* Global score */}
-              <div className="flex items-center gap-4 rounded-lg bg-muted/60 px-4 py-3">
-                <div className="flex size-9 items-center justify-center rounded-full bg-muted">
-                  <Sparkles className="size-4 text-muted-foreground" />
-                </div>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-3xl font-bold">{diagnostic.globalScore}</span>
-                  <span className="text-sm text-muted-foreground">/100</span>
-                </div>
-                <span className="ml-1 text-sm text-muted-foreground">Score IA global</span>
-              </div>
-
-              {/* Individual scores */}
-              <div className="grid grid-cols-2 gap-x-6 gap-y-3">
-                {Object.entries(diagnostic.maturity).map(([label, value]) => (
-                  <div key={label} className="flex items-center gap-3">
-                    <div className={`h-2.5 rounded-full ${scoreBg(value)}`} style={{ width: "80px" }}>
-                      <div
-                        className={`h-full rounded-full ${scoreColor(value)}`}
-                        style={{ width: `${value}%` }}
-                      />
+            {/* ── Row 4: Analyse prioritaire (neutral cards) ──── */}
+            <div className="grid grid-cols-4 gap-4">
+              {categoryAnalysis
+                .flatMap((cat) => cat.items.map((item) => ({ ...item, category: cat.category })))
+                .slice(0, 4)
+                .map((item) => (
+                  <Card key={item.title} className="flex flex-col justify-between px-5 py-4">
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-muted-foreground">{item.category}</span>
+                        <Badge variant="outline" className={cn("text-[10px]", statusStyle(item.status))}>
+                          {item.status}
+                        </Badge>
+                      </div>
+                      <p className="mt-2 text-sm font-semibold">{item.title}</p>
+                      <p className="mt-1 text-xs text-muted-foreground leading-relaxed line-clamp-2">
+                        {item.description}
+                      </p>
                     </div>
-                    <span className="text-xs text-muted-foreground">{label}</span>
-                    <span className="ml-auto text-sm font-semibold">{value}</span>
-                  </div>
+                    <div className="mt-4 border-t pt-3">
+                      <p className="text-2xl font-bold">{item.metric}</p>
+                      <p className="text-xs text-muted-foreground">{item.metricLabel}</p>
+                    </div>
+                  </Card>
                 ))}
-              </div>
             </div>
-          </div>
-        </Card>
-
           </TabsContent>
 
-          <TabsContent value="diagnostique" className="mt-6">
+          <TabsContent value="objectifs" className="mt-6">
             <Card>
               <CardHeader>
-                <CardTitle>Diagnostique</CardTitle>
+                <CardTitle>Objectifs</CardTitle>
                 <CardDescription>
-                  Découvrez les enjeux patrimoniaux clés et les risques identifiés pour votre situation.
+                  Définissez et suivez les objectifs patrimoniaux du client.
                 </CardDescription>
               </CardHeader>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="diagnostique" className="mt-6">
+            <DiagnostiqueContent categoryAnalysis={categoryAnalysis} />
           </TabsContent>
 
           <TabsContent value="preconisations" className="mt-6">

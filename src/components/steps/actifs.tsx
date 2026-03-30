@@ -13,16 +13,16 @@ function genId() {
 
 function useCategoryRows(initial?: RowData[], liveOverride?: unknown[]) {
   const [rows, setRows] = useState<RowData[]>(() => initial ?? [{ id: genId() }]);
-  const liveLen = liveOverride?.length ?? 0;
-  const prevLiveLen = useRef(0);
+  const prevSnap = useRef("");
 
   useEffect(() => {
-    if (!liveOverride || liveLen === 0) return;
-    if (liveLen !== prevLiveLen.current) {
-      prevLiveLen.current = liveLen;
+    if (!liveOverride || liveOverride.length === 0) return;
+    const snap = JSON.stringify(liveOverride);
+    if (snap !== prevSnap.current) {
+      prevSnap.current = snap;
       setRows(liveOverride as RowData[]);
     }
-  }, [liveLen, liveOverride]);
+  }, [liveOverride]);
 
   const add = useCallback(() => {
     setRows((prev) => [...prev, { id: genId() }]);
@@ -76,28 +76,11 @@ const fieldsDefiscalisant: FieldConfig[] = [
 /* ── Sub-step components ────────────────────────────────── */
 
 export function ActifsImmobilierStep() {
-  const { formData, liveMode } = useWizard();
-  const ctxImmo = liveMode ? (formData.actifsImmobilier as any) : null;
+  const { formData } = useWizard();
 
-  const biensUsage = useCategoryRows(
-    liveMode ? undefined : [
-      { id: "a1", nature: "Résidence principale", libelle: "Appartement Paris 16e", valeur: "650 000" },
-      { id: "a2", nature: "Résidence secondaire", libelle: "Maison Deauville", valeur: "380 000" },
-    ],
-    ctxImmo?.biensUsage
-  );
-  const immoRapport = useCategoryRows(
-    liveMode ? undefined : [
-      { id: "a3", nature: "Meublé", libelle: "Studio Lyon 3e", valeur: "185 000" },
-    ],
-    ctxImmo?.immobilierRapport
-  );
-  const immoDefiscalisant = useCategoryRows(
-    liveMode ? undefined : [
-      { id: "a4", dispositif: "Pinel", libelle: "T2 Bordeaux Euratlantique", valeur: "210 000", date: "15/03/2020" },
-    ],
-    ctxImmo?.immobilierDefiscalisant
-  );
+  const biensUsage = useCategoryRows(undefined, formData.actifsImmobilier.biensUsage);
+  const immoRapport = useCategoryRows(undefined, formData.actifsImmobilier.immobilierRapport);
+  const immoDefiscalisant = useCategoryRows(undefined, formData.actifsImmobilier.immobilierDefiscalisant);
 
   return (
     <div>
@@ -141,35 +124,12 @@ export function ActifsImmobilierStep() {
 }
 
 export function ActifsEpargneStep() {
-  const { formData, liveMode } = useWizard();
-  const ctxEpargne = liveMode ? (formData.actifsEpargne as any) : null;
+  const { formData } = useWizard();
 
-  const disponibilites = useCategoryRows(
-    liveMode ? undefined : [
-      { id: "a5", nature: "Compte courant", libelle: "CCP Société Générale", valeur: "12 500" },
-      { id: "a6", nature: "Livret A", libelle: "Livret A BNP", valeur: "22 950" },
-      { id: "a7", nature: "PEA", libelle: "PEA Boursorama", valeur: "45 000" },
-    ],
-    ctxEpargne?.disponibilites
-  );
-  const assuranceVie = useCategoryRows(
-    liveMode ? undefined : [
-      { id: "a8", nature: "Assurance vie", libelle: "Generali Épargne", valeur: "150 000", date: "10/06/2012" },
-    ],
-    ctxEpargne?.assuranceVie
-  );
-  const epargneRetraite = useCategoryRows(
-    liveMode ? undefined : [
-      { id: "a9", nature: "PER individuel", libelle: "PER Swisslife", valeur: "35 000", date: "01/09/2019" },
-    ],
-    ctxEpargne?.epargneRetraite
-  );
-  const produitsDef = useCategoryRows(
-    liveMode ? undefined : [
-      { id: "a10", nature: "FCPI", libelle: "FCPI Innovation 2023", valeur: "10 000", date: "15/12/2023" },
-    ],
-    ctxEpargne?.produitsDefiscalisation
-  );
+  const disponibilites = useCategoryRows(undefined, formData.actifsEpargne.disponibilites);
+  const assuranceVie = useCategoryRows(undefined, formData.actifsEpargne.assuranceVie);
+  const epargneRetraite = useCategoryRows(undefined, formData.actifsEpargne.epargneRetraite);
+  const produitsDef = useCategoryRows(undefined, formData.actifsEpargne.produitsDefiscalisation);
 
   return (
     <div>
@@ -217,12 +177,10 @@ export function ActifsEpargneStep() {
 }
 
 export function ActifsProfessionnelsStep() {
-  const biensPro = useCategoryRows([
-    { id: "a11", nature: "Parts sociales", libelle: "SCI Familiale Dupont", valeur: "120 000" },
-  ]);
-  const fonciers = useCategoryRows([
-    { id: "a12", nature: "GFV", libelle: "GFV Vignobles de Bordeaux", valeur: "25 000" },
-  ]);
+  const { formData } = useWizard();
+
+  const biensPro = useCategoryRows(undefined, formData.actifsProfessionnels.biensProfessionnels);
+  const fonciers = useCategoryRows(undefined, formData.actifsProfessionnels.placementsFonciers);
 
   return (
     <div>

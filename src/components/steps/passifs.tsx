@@ -11,16 +11,16 @@ function genId() { return String(nextId++); }
 
 function useCategoryRows(initial?: RowData[], liveOverride?: unknown[]) {
   const [rows, setRows] = useState<RowData[]>(() => initial ?? [{ id: genId() }]);
-  const liveLen = liveOverride?.length ?? 0;
-  const prevLiveLen = useRef(0);
+  const prevSnap = useRef("");
 
   useEffect(() => {
-    if (!liveOverride || liveLen === 0) return;
-    if (liveLen !== prevLiveLen.current) {
-      prevLiveLen.current = liveLen;
+    if (!liveOverride || liveOverride.length === 0) return;
+    const snap = JSON.stringify(liveOverride);
+    if (snap !== prevSnap.current) {
+      prevSnap.current = snap;
       setRows(liveOverride as RowData[]);
     }
-  }, [liveLen, liveOverride]);
+  }, [liveOverride]);
 
   const add = useCallback(() => setRows((p) => [...p, { id: genId() }]), []);
   const remove = useCallback((id: string) => setRows((p) => p.filter((r) => r.id !== id)), []);
@@ -37,28 +37,11 @@ const fields: FieldConfig[] = [
 ];
 
 export function PassifsStep() {
-  const { formData, liveMode } = useWizard();
-  const ctxPassifs = liveMode ? (formData.passifs as any) : null;
+  const { formData } = useWizard();
 
-  const pretImmo = useCategoryRows(
-    liveMode ? undefined : [
-      { id: "p1", nature: "Prêt amortissable", libelle: "Crédit Appartement Paris", montant: "320 000" },
-      { id: "p2", nature: "Prêt amortissable", libelle: "Crédit Maison Deauville", montant: "145 000" },
-    ],
-    ctxPassifs?.pretImmobilier
-  );
-  const pretPro = useCategoryRows(
-    liveMode ? undefined : [
-      { id: "p3", nature: "Crédit-bail", libelle: "Leasing véhicule société", montant: "18 500" },
-    ],
-    ctxPassifs?.pretProfessionnel
-  );
-  const autresPrets = useCategoryRows(
-    liveMode ? undefined : [
-      { id: "p4", nature: "Prêt amortissable", libelle: "Prêt travaux cuisine", montant: "8 000" },
-    ],
-    ctxPassifs?.autresPrets
-  );
+  const pretImmo = useCategoryRows(undefined, formData.passifs.pretImmobilier);
+  const pretPro = useCategoryRows(undefined, formData.passifs.pretProfessionnel);
+  const autresPrets = useCategoryRows(undefined, formData.passifs.autresPrets);
 
   return (
     <div>
