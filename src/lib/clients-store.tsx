@@ -263,10 +263,29 @@ const initialClients: Client[] = [
   { id: 10, firstName: "Catherine", lastName: "Roux", email: "c.roux@email.fr", phone: "06 01 23 45 67", type: "Particulier", status: "Actif" },
   { id: 11, firstName: "Éric", lastName: "Girard", email: "e.girard@entreprise.fr", phone: "06 11 22 33 44", type: "Professionnel", status: "Actif" },
   { id: 12, firstName: "Valérie", lastName: "Lefebvre", email: "v.lefebvre@email.fr", phone: "06 55 66 77 88", type: "Particulier", status: "Prospect" },
+  { id: 13, firstName: "Henri", lastName: "Beaumont", email: "h.beaumont@email.fr", phone: "06 42 18 73 95", type: "Particulier", status: "Actif" },
 ].map((c) => ({
   ...c,
   formData: generateFormData(c.id, c.firstName, c.lastName, c.email, c.phone),
 })) as Client[];
+
+// Override client 13 (Henri Beaumont) to match sampleClient values
+const henriIdx = initialClients.findIndex((c) => c.id === 13);
+if (henriIdx !== -1) {
+  const fd = initialClients[henriIdx].formData;
+  fd.compositionFamiliale.situationFamiliale = "Veuf(ve)";
+  fd.compositionFamiliale.partenaire = { civilite: "", nom: "", prenom: "", dateNaissance: "", professionCSP: "", professionLibelle: "" };
+  fd.actifsEpargne.disponibilites = [makeItem("ep1", { nature: "Livret A", libelle: "Livret A", valeur: "23000" })];
+  fd.actifsEpargne.assuranceVie = [makeItem("ep2", { nature: "Assurance vie", libelle: "Contrat AV", valeur: "216000" })];
+  fd.actifsEpargne.epargneRetraite = [makeItem("ep3", { nature: "PER individuel", libelle: "PER", valeur: "34000" })];
+  fd.actifsImmobilier.biensUsage = [makeItem("immo1", { nature: "Résidence principale", libelle: "Résidence principale", valeur: "850000" })];
+  fd.actifsImmobilier.immobilierRapport = [makeItem("immo2", { nature: "Nu", libelle: "Appartement locatif", valeur: "320000" })];
+  fd.passifs.pretImmobilier = [makeItem("pas1", { nature: "Prêt amortissable", libelle: "Prêt immobilier RP", montant: "143000" })];
+  fd.revenus.revenusActivites = [makeItem("rev1", { nature: "Salaire", libelle: "Revenus d'activité", montant: "105000" })];
+  fd.revenus.revenusImmobiliers = [makeItem("rev4", { nature: "Loyer", libelle: "Revenus immobiliers", montant: "18000" })];
+  fd.revenus.revenusMobiliers = [makeItem("rev3", { nature: "Dividende", libelle: "Revenus mobiliers", montant: "8000" })];
+  fd.revenus.autresRevenus = [makeItem("rev5", { nature: "Rente", libelle: "Autres revenus", montant: "10000" })];
+}
 
 interface ClientsContextType {
   clients: Client[];

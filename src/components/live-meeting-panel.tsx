@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useWizard } from "@/lib/wizard-context";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Mic, Radio, Clock, Square, Lightbulb } from "lucide-react";
+import { Mic, Radio, Clock, Square, Play, Lightbulb } from "lucide-react";
 
 interface SuggestedQuestion {
   question: string;
@@ -262,6 +262,7 @@ export function LiveMeetingPanel() {
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const scriptIdxRef = useRef(0);
 
   const stopRecording = useCallback(() => {
     if (intervalRef.current) clearInterval(intervalRef.current);
@@ -271,8 +272,33 @@ export function LiveMeetingPanel() {
     setIsRecording(false);
     setMessages((prev) => [
       ...prev,
-      { role: "system", text: "Enregistrement arrêté par l'utilisateur" },
+      { role: "system", text: "Enregistrement en pause" },
     ]);
+  }, []);
+
+  const resumeRecording = useCallback(() => {
+    if (scriptIdxRef.current >= MEETING_SCRIPT.length) return;
+    setIsRecording(true);
+    setMessages((prev) => [
+      ...prev,
+      { role: "system", text: "Enregistrement repris" },
+    ]);
+
+    intervalRef.current = setInterval(() => {
+      if (scriptIdxRef.current >= MEETING_SCRIPT.length) {
+        if (intervalRef.current) clearInterval(intervalRef.current);
+        if (timerRef.current) clearInterval(timerRef.current);
+        setIsRecording(false);
+        return;
+      }
+      const msg = MEETING_SCRIPT[scriptIdxRef.current];
+      setMessages((prev) => [...prev, msg]);
+      scriptIdxRef.current++;
+    }, 2200);
+
+    timerRef.current = setInterval(() => {
+      setElapsed((prev) => prev + 1);
+    }, 1000);
   }, []);
 
   useEffect(() => {
@@ -280,17 +306,16 @@ export function LiveMeetingPanel() {
     startedRef.current = true;
     setIsRecording(true);
 
-    let idx = 0;
     intervalRef.current = setInterval(() => {
-      if (idx >= MEETING_SCRIPT.length) {
+      if (scriptIdxRef.current >= MEETING_SCRIPT.length) {
         if (intervalRef.current) clearInterval(intervalRef.current);
         if (timerRef.current) clearInterval(timerRef.current);
         setIsRecording(false);
         return;
       }
-      const msg = MEETING_SCRIPT[idx];
+      const msg = MEETING_SCRIPT[scriptIdxRef.current];
       setMessages((prev) => [...prev, msg]);
-      idx++;
+      scriptIdxRef.current++;
     }, 2200);
 
     timerRef.current = setInterval(() => {
@@ -444,10 +469,10 @@ export function LiveMeetingPanel() {
   return (
     <div className="flex w-96 shrink-0 flex-col border-l bg-card">
       {/* Header */}
-      <div className="flex items-center justify-between border-b px-4 py-3">
+      <div className="flex h-14 items-center justify-between border-b px-4">
         <div className="flex items-center gap-2">
           <div className={`size-2 rounded-full ${isRecording ? "bg-red-500 animate-pulse" : "bg-muted-foreground"}`} />
-          <span className="text-sm font-medium">Entretien en direct</span>
+          <span className="text-sm font-medium">En cours</span>
         </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -468,6 +493,15 @@ export function LiveMeetingPanel() {
                 Arrêter
               </button>
             </>
+          )}
+          {!isRecording && scriptIdxRef.current < MEETING_SCRIPT.length && (
+            <button
+              onClick={resumeRecording}
+              className="flex items-center gap-1.5 rounded-md bg-[#0052CC] px-2.5 py-1 text-xs font-medium text-white transition-colors hover:bg-[#0052CC]/90"
+            >
+              <Play className="size-3" />
+              Reprendre
+            </button>
           )}
         </div>
       </div>

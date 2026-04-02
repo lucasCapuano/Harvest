@@ -8,6 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useLoading } from "@/hooks/use-loading";
 import {
   Table,
   TableBody,
@@ -218,6 +220,7 @@ function ClientCard({ client, onClick }: { client: Client; onClick: () => void }
 }
 
 export default function ClientsPage() {
+  const loading = useLoading();
   const [view, setView] = useState<"table" | "cards">("table");
   const [newClientOpen, setNewClientOpen] = useState(false);
   const [transcriptOpen, setTranscriptOpen] = useState(false);
@@ -233,21 +236,6 @@ export default function ClientsPage() {
   const [sortKey, setSortKey] = useState<"name" | "email" | "patrimoine" | "status" | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
-
-
-  const toggleSort = (key: typeof sortKey) => {
-    if (sortKey === key) {
-      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
-    } else {
-      setSortKey(key);
-      setSortDir("asc");
-    }
-  };
-
-  const SortIcon = ({ col }: { col: typeof sortKey }) => {
-    if (sortKey !== col) return <ArrowUpDown className="ml-1 size-3" />;
-    return sortDir === "asc" ? <ArrowUp className="ml-1 size-3" /> : <ArrowDown className="ml-1 size-3" />;
-  };
 
   const filtered = useMemo(() => {
     let list = [...clients];
@@ -281,6 +269,61 @@ export default function ClientsPage() {
     }
     return list;
   }, [clients, search, sortKey, sortDir]);
+
+  if (loading) {
+    return (
+      <AppLayout title={<Skeleton className="h-6 w-24" />}>
+        <div className="mb-6 grid grid-cols-4 gap-4">
+          {[0, 1, 2, 3].map((i) => (
+            <Card key={i} className="p-4 space-y-2">
+              <Skeleton className="h-3 w-24" />
+              <Skeleton className="h-7 w-16" />
+            </Card>
+          ))}
+        </div>
+        <div className="mb-6 flex items-center justify-between">
+          <Skeleton className="h-9 w-64 rounded-md" />
+          <div className="flex gap-2">
+            <Skeleton className="h-9 w-20 rounded-md" />
+            <Skeleton className="h-7 w-32 rounded-md" />
+          </div>
+        </div>
+        <Card className="overflow-hidden">
+          <div className="border-b px-4 py-3 flex gap-4">
+            {[0, 1, 2, 3, 4, 5, 6].map((i) => (
+              <Skeleton key={i} className="h-4 flex-1" />
+            ))}
+          </div>
+          {[0, 1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="flex items-center gap-4 border-b px-4 py-4">
+              <Skeleton className="size-4 rounded" />
+              <Skeleton className="size-8 rounded-full" />
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-4 flex-1" />
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-5 w-16 rounded-full" />
+              <Skeleton className="h-4 w-20" />
+            </div>
+          ))}
+        </Card>
+      </AppLayout>
+    );
+  }
+
+
+  const toggleSort = (key: typeof sortKey) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  };
+
+  const SortIcon = ({ col }: { col: typeof sortKey }) => {
+    if (sortKey !== col) return <ArrowUpDown className="ml-1 size-3" />;
+    return sortDir === "asc" ? <ArrowUp className="ml-1 size-3" /> : <ArrowDown className="ml-1 size-3" />;
+  };
 
 
 
@@ -344,6 +387,32 @@ export default function ClientsPage() {
 
   return (
     <AppLayout title="Clients">
+      {/* Stats */}
+      <div className="mb-6 flex gap-4">
+        <Card className="flex-1 gap-1 p-4">
+          <p className="text-xs text-muted-foreground">Total clients</p>
+          <p className="text-2xl font-semibold text-foreground">{clients.length}</p>
+        </Card>
+        <Card className="flex-1 gap-1 p-4">
+          <p className="text-xs text-muted-foreground">Actifs</p>
+          <p className="text-2xl font-semibold text-foreground">
+            {clients.filter((c) => c.status === "Actif").length}
+          </p>
+        </Card>
+        <Card className="flex-1 gap-1 p-4">
+          <p className="text-xs text-muted-foreground">Prospects</p>
+          <p className="text-2xl font-semibold text-foreground">
+            {clients.filter((c) => c.status === "Prospect").length}
+          </p>
+        </Card>
+        <Card className="flex-1 gap-1 p-4">
+          <p className="text-xs text-muted-foreground">Patrimoine total</p>
+          <p className="text-2xl font-semibold text-foreground">
+            {formatPatrimoine(clients.reduce((sum, c) => sum + computePatrimoineNet(c.formData), 0))}
+          </p>
+        </Card>
+      </div>
+
       {/* Toolbar */}
       <div className="mb-6 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3 flex-1">
@@ -447,36 +516,10 @@ export default function ClientsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Stats */}
-      <div className="mb-6 flex gap-4">
-        <Card className="flex-1 gap-1 p-4">
-          <p className="text-xs text-muted-foreground">Total clients</p>
-          <p className="text-2xl font-semibold text-foreground">{clients.length}</p>
-        </Card>
-        <Card className="flex-1 gap-1 p-4">
-          <p className="text-xs text-muted-foreground">Actifs</p>
-          <p className="text-2xl font-semibold text-foreground">
-            {clients.filter((c) => c.status === "Actif").length}
-          </p>
-        </Card>
-        <Card className="flex-1 gap-1 p-4">
-          <p className="text-xs text-muted-foreground">Prospects</p>
-          <p className="text-2xl font-semibold text-foreground">
-            {clients.filter((c) => c.status === "Prospect").length}
-          </p>
-        </Card>
-        <Card className="flex-1 gap-1 p-4">
-          <p className="text-xs text-muted-foreground">Patrimoine total</p>
-          <p className="text-2xl font-semibold text-foreground">
-            {formatPatrimoine(clients.reduce((sum, c) => sum + computePatrimoineNet(c.formData), 0))}
-          </p>
-        </Card>
-      </div>
-
       {/* Table View */}
       {view === "table" && (
         <div className="min-h-0 flex-1 space-y-4">
-          <Card className="border border-border overflow-hidden">
+          <Card className="overflow-hidden py-2">
             <Table>
               <TableHeader>
                 <TableRow>

@@ -10,7 +10,9 @@ import {
   Newspaper,
   Briefcase,
   Video,
+  LogOut,
 } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 import {
   Sidebar,
   SidebarContent,
@@ -29,8 +31,8 @@ import {
 const navItems = [
   { label: "Applications", icon: LayoutGrid, href: "/applications" },
   { label: "Clients", icon: Users, href: "/clients" },
-  { label: "Alertes", icon: AlertTriangle, href: "#" },
-  { label: "Actualités", icon: Newspaper, href: "#" },
+  { label: "Alertes", icon: AlertTriangle, href: "/alertes" },
+  { label: "Actualités", icon: Newspaper, href: "/actualites" },
   { label: "Formations", icon: Briefcase, href: "#" },
   { label: "Webinaires", icon: Video, href: "#" },
 ];
@@ -56,7 +58,7 @@ export function AppSidebar() {
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupContent>
-            <SidebarMenu className="gap-3">
+            <SidebarMenu className="gap-1.5">
               {navItems.map((item) => {
                 const isActive =
                   pathname === item.href ||
@@ -67,6 +69,7 @@ export function AppSidebar() {
                       render={<Link href={item.href} />}
                       isActive={isActive}
                       tooltip={item.label}
+                      className={isActive ? "font-semibold" : "text-[rgb(91,91,100)]"}
                     >
                         <item.icon />
                         <span>{item.label}</span>
@@ -80,7 +83,7 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter>
-        <SidebarMenu>
+        <SidebarMenu className="gap-4">
           <SidebarMenuItem>
             <SidebarMenuButton size="lg">
               <div className="flex size-8 items-center justify-center rounded-full bg-muted text-xs font-semibold">
@@ -90,6 +93,13 @@ export function AppSidebar() {
                 <span className="truncate font-semibold">John DOE</span>
                 <span className="truncate text-xs text-muted-foreground">john@harvest.fr</span>
               </div>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <Separator />
+          <SidebarMenuItem>
+            <SidebarMenuButton className="text-muted-foreground hover:text-destructive hover:bg-destructive/10">
+              <LogOut className="size-4" />
+              <span>Se déconnecter</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

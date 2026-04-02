@@ -9,6 +9,12 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useLoading } from "@/hooks/use-loading";
+import AdvisorCopilot from "@/components/AdvisorCopilot";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label as FormLabel } from "@/components/ui/label";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -47,6 +53,7 @@ import {
   Search,
   BarChart3,
   ChevronDown,
+  ChevronUp,
   MoreHorizontal,
   Check,
   Video,
@@ -265,7 +272,7 @@ function RevenusWaterfallChart({ data }: { data: ReturnType<typeof deriveClientD
 
 /* ── Multiple line chart for Actifs/Passifs evolution ──── */
 const evolutionChartConfig = {
-  actifs: { label: "Total Actifs", color: "oklch(var(--viz))" },
+  actifs: { label: "Total Actifs", color: "var(--chart-1)" },
   passifs: { label: "Total Passifs", color: "var(--muted-foreground)" },
 } satisfies ChartConfig;
 
@@ -344,19 +351,19 @@ function EvolutionLineChart({ data }: { data: ReturnType<typeof deriveClientData
 /* ── Pie chart config ────────────────────────────────────── */
 const patrimoineChartConfig = {
   value: { label: "Montant" },
-  immobilier: { label: "Immobilier", color: "oklch(var(--viz))" },
-  epargne: { label: "Épargne", color: "oklch(var(--viz) / 0.5)" },
-  professionnel: { label: "Professionnel", color: "oklch(var(--viz) / 0.2)" },
+  immobilier: { label: "Immobilier", color: "var(--chart-1)" },
+  epargne: { label: "Épargne", color: "var(--chart-3)" },
+  professionnel: { label: "Professionnel", color: "var(--chart-5)" },
 } satisfies ChartConfig;
 
 function PatrimoinePieChart({ data }: { data: ReturnType<typeof deriveClientData> }) {
   const chartData = useMemo(() => {
     const items = [
-      { name: "immobilier", value: data.actifs.immobilier.total, fill: "oklch(var(--viz))" },
-      { name: "epargne", value: data.actifs.epargne.total, fill: "oklch(var(--viz) / 0.5)" },
+      { name: "immobilier", value: data.actifs.immobilier.total, fill: "var(--chart-1)" },
+      { name: "epargne", value: data.actifs.epargne.total, fill: "var(--chart-3)" },
     ];
     if (data.actifs.professionnel > 0) {
-      items.push({ name: "professionnel", value: data.actifs.professionnel, fill: "oklch(var(--viz) / 0.2)" });
+      items.push({ name: "professionnel", value: data.actifs.professionnel, fill: "var(--chart-5)" });
     }
     return items;
   }, [data]);
@@ -424,16 +431,16 @@ function PatrimoinePieChart({ data }: { data: ReturnType<typeof deriveClientData
       </CardContent>
       <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 px-4 pb-4 text-xs text-muted-foreground">
         <span className="flex items-center gap-1.5">
-          <span className="size-2.5 rounded-full bg-viz" />
+          <span className="size-2.5 rounded-full bg-chart-1" />
           Immobilier ({Math.round((data.actifs.immobilier.total / data.actifs.total) * 100)}%)
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="size-2.5 rounded-full bg-viz/50" />
+          <span className="size-2.5 rounded-full bg-chart-3" />
           Épargne ({Math.round((data.actifs.epargne.total / data.actifs.total) * 100)}%)
         </span>
         {data.actifs.professionnel > 0 && (
           <span className="flex items-center gap-1.5">
-            <span className="size-2.5 rounded-full bg-viz/20" />
+            <span className="size-2.5 rounded-full bg-chart-5" />
             Pro. ({Math.round((data.actifs.professionnel / data.actifs.total) * 100)}%)
           </span>
         )}
@@ -902,162 +909,494 @@ function buildRemarques(cats: CategoryAnalysis[]): Remarque[] {
 
 /* ── DiagnostiqueContent component ───────────────────────── */
 function DiagnostiqueContent({ categoryAnalysis }: { categoryAnalysis: CategoryAnalysis[] }) {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCat, setSelectedCat] = useState<string | null>(null);
+  const [activeCat, setActiveCat] = useState<string | null>(null);
+  const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
+  const globalScore = Math.round(categoryAnalysis.reduce((s, c) => s + c.score, 0) / categoryAnalysis.length);
+  const criticalItems = categoryAnalysis.flatMap((c) => c.items.filter((i) => i.priority === "haute").map((i) => ({ ...i, category: c.category })));
+  const opportunityItems = categoryAnalysis.flatMap((c) => c.items.filter((i) => i.status === "Opportunité").map((i) => ({ ...i, category: c.category })));
 
-  const allObjectives = categoryAnalysis
-    .filter((c) => !selectedCat || c.category === selectedCat)
-    .flatMap((cat) =>
-      cat.items.map((item) => ({ ...item, category: cat.category }))
-    )
-    .filter((item) =>
-      !searchQuery || item.title.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+  const globalStatus = globalScore >= 70 ? "Sain" : globalScore >= 50 ? "À surveiller" : "Critique";
+  const globalStatusColor = globalScore >= 70 ? "text-green-500" : globalScore >= 50 ? "text-amber-500" : "text-red-500";
+  const globalStatusBg = globalScore >= 70 ? "bg-green-500/10 border-green-500/20" : globalScore >= 50 ? "bg-amber-500/10 border-amber-500/20" : "bg-red-500/10 border-red-500/20";
 
-  const remarques = buildRemarques(categoryAnalysis);
+  const insights = [
+    { label: "Concentration immobilière élevée", description: "Le patrimoine est surexposé à l'immobilier, réduisant la liquidité globale.", severity: "attention" as const },
+    { label: "Liquidité solide mais sous-exploitée", description: "L'épargne disponible pourrait être mieux orientée vers des supports performants.", severity: "opportunité" as const },
+    { label: "Endettement acceptable", description: "Le ratio d'endettement reste dans les normes mais réduit la flexibilité d'investissement.", severity: "neutre" as const },
+    { label: "Préparation retraite en retard", description: "L'effort d'épargne retraite est insuffisant par rapport à l'objectif de maintien du niveau de vie.", severity: "attention" as const },
+    { label: "Enveloppes fiscales sous-utilisées", description: "Les plafonds PER et les abattements de donation ne sont pas pleinement exploités.", severity: "opportunité" as const },
+  ];
+
+  const insightColor = (s: "attention" | "opportunité" | "neutre") => {
+    switch (s) {
+      case "attention": return "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400";
+      case "opportunité": return "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400";
+      case "neutre": return "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400";
+    }
+  };
 
   return (
-    <div className="grid grid-cols-2 gap-4">
-      {/* ── Left: Objectifs card ── */}
-      <Card className="flex flex-col overflow-hidden">
-        <CardHeader>
-          <div className="flex items-start justify-between">
-            <div className="flex flex-col gap-1">
-              <CardTitle className="flex items-center gap-2 text-sm">
-                <BarChart3 className="size-4" />
-                Objectifs du diagnostic
-              </CardTitle>
-              <CardDescription className="text-xs">
-                Mis à jour le {new Date().toLocaleDateString("fr-FR")}
-              </CardDescription>
-            </div>
-            <Button variant="outline" size="sm" className="text-xs">
-              <Plus className="mr-1 size-3" />
-              Ajouter
-            </Button>
+    <div className="space-y-12">
+      {/* ── Top summary banner ── */}
+      <Card className="p-4">
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <h3 className="text-base font-semibold text-foreground">Vue d&apos;ensemble</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Évaluation globale de la situation patrimoniale du client. Dernière mise à jour : 01/04/2026.
+            </p>
           </div>
+          <div className={`flex items-center gap-2 rounded-lg border px-4 py-2 ${globalStatusBg}`}>
+            <span className={`text-2xl font-bold ${globalStatusColor}`}>{globalScore}</span>
+            <div>
+              <p className={`text-sm font-semibold ${globalStatusColor}`}>{globalStatus}</p>
+              <p className="text-[10px] text-muted-foreground">/ 100</p>
+            </div>
+          </div>
+        </div>
 
-          {/* Search + filter bar */}
-          <div className="flex items-center gap-3 pt-4">
-            <div className="flex flex-1 items-center overflow-hidden rounded-lg border">
-              <Select
-                value={selectedCat ?? "__all__"}
-                onValueChange={(v) => setSelectedCat(v === "__all__" ? null : v)}
-              >
-                <SelectTrigger className="w-[160px] rounded-none border-0 border-r bg-muted text-xs font-medium">
-                  <SelectValue placeholder="All categories" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__all__">Toutes catégories</SelectItem>
-                  {categoryAnalysis.map((cat) => (
-                    <SelectItem key={cat.category} value={cat.category}>
-                      {cat.category}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <div className="flex flex-1 items-center gap-2 px-3">
-                <Search className="size-4 text-muted-foreground" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Rechercher"
-                  className="h-10 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+        {/* Score bars per category */}
+        <div className="grid grid-cols-6 gap-4">
+          {categoryAnalysis.map((cat) => (
+            <div key={cat.category}>
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-xs font-medium text-muted-foreground">{cat.category}</span>
+                <span className="text-xs font-bold text-foreground">{cat.score}</span>
+              </div>
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                <div
+                  className={`h-full rounded-full transition-all ${cat.score >= 70 ? "bg-green-500" : cat.score >= 50 ? "bg-amber-400" : "bg-red-400"}`}
+                  style={{ width: `${cat.score}%` }}
                 />
               </div>
             </div>
-            <Button size="icon" className="shrink-0">
-              <Search className="size-4" />
-            </Button>
-          </div>
-        </CardHeader>
+          ))}
+        </div>
+      </Card>
 
-        <CardContent className="flex-1 space-y-4 overflow-y-auto">
-          {allObjectives.map((item) => (
-            <div key={item.title} className="rounded-lg border p-5 space-y-3">
-              {/* Title row: title + tag + status + menu */}
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  <p className="text-base font-semibold text-foreground">{item.title}</p>
-                  <Badge
+      {/* ── Diagnostic cards grid ── */}
+      <div>
+        <h4 className="text-base font-semibold text-foreground">Constats par domaine</h4>
+        <p className="text-sm text-muted-foreground mb-6">Choisissez les constats à intégrer au rapport afin de structurer la restitution du diagnostic.</p>
+        <div className="flex items-center gap-2 mb-4">
+          <button
+            onClick={() => setActiveCat(null)}
+            className={`rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
+              activeCat === null ? "bg-foreground text-background" : "bg-muted text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Tout
+          </button>
+          {categoryAnalysis.map((cat) => (
+            <button
+              key={cat.category}
+              onClick={() => setActiveCat(cat.category)}
+              className={`rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
+                activeCat === cat.category ? "bg-foreground text-background" : "bg-muted text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {cat.category}
+              <span className="ml-1.5 text-[10px] opacity-60">{cat.items.length}</span>
+            </button>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3" style={{ gap: "16px" }}>
+          {categoryAnalysis
+            .filter((cat) => !activeCat || cat.category === activeCat)
+            .flatMap((cat) =>
+            cat.items.map((item) => (
+              <Card key={item.title} className="p-4 gap-0">
+                <div className="flex items-start gap-3">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCheckedItems((prev) => {
+                        const next = new Set(prev);
+                        if (next.has(item.title)) next.delete(item.title);
+                        else next.add(item.title);
+                        return next;
+                      });
+                    }}
                     className={cn(
-                      "gap-1 text-[11px]",
-                      tagColors[item.category] ?? "bg-muted text-muted-foreground"
+                      "mt-1 flex size-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors",
+                      checkedItems.has(item.title)
+                        ? "border-[#0052CC] bg-[#0052CC] text-white"
+                        : "border-muted-foreground/30 hover:border-muted-foreground/60"
                     )}
                   >
-                    <BookOpen className="size-3" />
-                    {item.category}
-                  </Badge>
-                  <Badge variant="outline" className="gap-1 text-[11px]">
-                    <span className="size-1.5 rounded-full bg-muted-foreground" />
-                    {item.status}
-                  </Badge>
+                    {checkedItems.has(item.title) && <Check className="size-3" />}
+                  </button>
+                  <div>
+                    <h5 className="text-sm font-semibold text-foreground mb-1.5">{item.title}</h5>
+                    <p className="text-xs text-muted-foreground leading-relaxed">{item.description}</p>
+                  </div>
                 </div>
-                <Button variant="ghost" size="icon" className="size-7 shrink-0">
-                  <MoreHorizontal className="size-4" />
-                </Button>
-              </div>
-              {/* Description */}
-              <p className="text-sm text-muted-foreground leading-relaxed">{item.description}</p>
-              {/* Bottom pill */}
-              <div className="flex items-center">
-                <span className="inline-flex items-center gap-1.5 rounded-full border bg-muted px-2.5 py-0.5 text-xs text-foreground">
-                  <Video className="size-3.5" />
-                  {item.metricLabel} — {item.metric}
-                </span>
-              </div>
-            </div>
-          ))}
-          {allObjectives.length === 0 && (
-            <p className="text-center text-sm text-muted-foreground py-8">Aucun objectif trouvé</p>
+              </Card>
+            ))
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
+    </div>
+  );
+}
 
-      {/* ── Right: Remarques pour rapport ── */}
-      <Card className="flex flex-col overflow-hidden">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2 text-sm">
-              <ListChecks className="size-4" />
-              Remarques pour rapport
-            </CardTitle>
-            <Button variant="ghost" size="icon" className="size-7">
-              <MoreHorizontal className="size-4" />
-            </Button>
+const objectifsData = [
+  {
+    title: "Organiser la transmission du patrimoine",
+    description:
+      "L\u2019absence de clause bénéficiaire personnalisée et les abattements de donation disponibles révèlent un potentiel d\u2019optimisation successorale important.",
+    questions: [
+      { text: "À qui souhaitez-vous transmettre votre patrimoine en priorité ?", hint: "Identifier les bénéficiaires permet de calibrer les abattements et d\u2019optimiser la clause bénéficiaire." },
+      { text: "Avez-vous déjà réalisé des donations à vos enfants ou à d\u2019autres proches ?", hint: "Les donations antérieures impactent les abattements restants (renouvellement tous les 15 ans)." },
+      { text: "Y a-t-il des biens spécifiques que vous souhaitez attribuer à une personne en particulier ?", hint: "Les legs spécifiques nécessitent un traitement testamentaire adapté et peuvent modifier la répartition fiscale." },
+      { text: "Êtes-vous marié sous quel régime matrimonial ?", hint: "Le régime matrimonial détermine la masse successorale et les droits du conjoint survivant." },
+    ],
+  },
+  {
+    title: "Réduire la pression fiscale",
+    description:
+      "Avec un TMI à 41%, plusieurs leviers de défiscalisation sont activables pour réduire significativement l\u2019impôt sur le revenu.",
+    questions: [
+      { text: "Utilisez-vous actuellement des dispositifs de défiscalisation ?", hint: "Pinel, FCPI, FIP, Girardin… chaque dispositif a ses plafonds et conditions spécifiques." },
+      { text: "Avez-vous optimisé vos versements sur un PER ?", hint: "Les versements PER sont déductibles du revenu imposable dans la limite du plafond disponible." },
+      { text: "Connaissez-vous votre taux marginal d\u2019imposition actuel ?", hint: "Le TMI conditionne l\u2019efficacité des stratégies de défiscalisation envisageables." },
+      { text: "Avez-vous envisagé un investissement en immobilier locatif avec avantage fiscal ?", hint: "L\u2019immobilier locatif offre des réductions d\u2019impôt mais implique un engagement de durée." },
+    ],
+  },
+  {
+    title: "Rééquilibrer l\u2019allocation patrimoniale",
+    description:
+      "La surexposition immobilière (70%) crée un risque de liquidité. Une diversification vers des actifs financiers améliorerait la résilience du patrimoine.",
+    questions: [
+      { text: "Quelle part de votre patrimoine est investie en immobilier aujourd\u2019hui ?", hint: "Une concentration supérieure à 60% expose à un risque de liquidité en cas de besoin urgent." },
+      { text: "Disposez-vous d\u2019une épargne de précaution suffisante ?", hint: "L\u2019épargne de précaution recommandée couvre 3 à 6 mois de charges courantes." },
+      { text: "Seriez-vous ouvert à diversifier vers des placements financiers ?", hint: "Assurance-vie, PEA et comptes-titres offrent liquidité et diversification sectorielle." },
+      { text: "Avez-vous des projets de cession immobilière à court ou moyen terme ?", hint: "Une cession planifiée peut libérer des liquidités pour rééquilibrer l\u2019allocation." },
+    ],
+  },
+  {
+    title: "Préparer la retraite et combler le gap de revenus",
+    description:
+      "La baisse estimée de 45% des revenus à la retraite nécessite une stratégie de capitalisation anticipée pour maintenir le niveau de vie.",
+    questions: [
+      { text: "Avez-vous estimé vos revenus prévisionnels à la retraite ?", hint: "Le relevé de situation individuelle (RIS) permet d\u2019évaluer les droits acquis." },
+      { text: "Disposez-vous d\u2019un Plan Épargne Retraite (PER) ?", hint: "Le PER offre un avantage fiscal à l\u2019entrée et une sortie flexible en capital ou rente." },
+      { text: "À quel âge envisagez-vous de partir à la retraite ?", hint: "L\u2019âge de départ impacte directement le montant de la pension et la durée de capitalisation." },
+      { text: "Quel niveau de revenus mensuels souhaitez-vous maintenir ?", hint: "Définir un objectif de revenus permet de calibrer l\u2019effort d\u2019épargne nécessaire." },
+    ],
+  },
+  {
+    title: "Renforcer la couverture prévoyance",
+    description:
+      "Le capital décès actuel ne couvre que 2 ans de charges familiales, bien en deçà des 5 ans recommandés. Un complément est indispensable.",
+    questions: [
+      { text: "Connaissez-vous le montant de votre capital décès actuel ?", hint: "Cumulez les garanties professionnelles et personnelles pour évaluer la couverture totale." },
+      { text: "Disposez-vous d\u2019une garantie incapacité/invalidité complémentaire ?", hint: "La couverture employeur seule est souvent insuffisante pour maintenir le niveau de vie." },
+      { text: "Vos proches seraient-ils financièrement protégés en cas de décès ?", hint: "Le capital décès doit couvrir au minimum 3 à 5 ans de charges familiales." },
+      { text: "Avez-vous revu vos contrats depuis votre dernier changement de situation ?", hint: "Mariage, naissance, achat immobilier… chaque événement nécessite une mise à jour." },
+    ],
+  },
+];
+
+function ObjectifsContent({ addOpen, setAddOpen }: { addOpen: boolean; setAddOpen: (v: boolean) => void }) {
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const [checkedQuestions, setCheckedQuestions] = useState<Set<string>>(new Set());
+  const [customObjectives, setCustomObjectives] = useState<{ title: string; description: string }[]>([]);
+  const [newTitle, setNewTitle] = useState("");
+  const [newDesc, setNewDesc] = useState("");
+
+  const allObjectives = [...objectifsData, ...customObjectives.map((o) => ({ ...o, questions: [] }))];
+
+  const totalObjectives = allObjectives.length;
+  const totalQuestions = objectifsData.reduce((sum, o) => sum + o.questions.length, 0);
+  const completedQuestions = checkedQuestions.size;
+
+  const isObjectiveComplete = (i: number) => {
+    const obj = allObjectives[i];
+    if (!obj.questions.length) return checkedQuestions.has(`custom-${i}`);
+    return obj.questions.every((_, j) => checkedQuestions.has(`${i}-${j}`));
+  };
+
+  const completedObjectives = allObjectives.filter((_, i) => isObjectiveComplete(i)).length;
+  const progressPercent = totalQuestions > 0 ? Math.round((completedQuestions / totalQuestions) * 100) : 0;
+
+  const toggleObjective = (i: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const obj = allObjectives[i];
+    if (!obj.questions.length) {
+      setCheckedQuestions((prev) => {
+        const next = new Set(prev);
+        const key = `custom-${i}`;
+        if (next.has(key)) next.delete(key); else next.add(key);
+        return next;
+      });
+      return;
+    }
+    const allChecked = isObjectiveComplete(i);
+    setCheckedQuestions((prev) => {
+      const next = new Set(prev);
+      obj.questions.forEach((_, j) => {
+        const key = `${i}-${j}`;
+        if (allChecked) next.delete(key); else next.add(key);
+      });
+      return next;
+    });
+  };
+
+  const toggleQuestion = (key: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCheckedQuestions((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  };
+
+  const handleAdd = () => {
+    if (!newTitle.trim()) return;
+    setCustomObjectives((prev) => [...prev, { title: newTitle.trim(), description: newDesc.trim() }]);
+    setNewTitle("");
+    setNewDesc("");
+    setAddOpen(false);
+  };
+
+  return (
+    <TabsContent value="objectifs" className="mt-6 space-y-4">
+      <div className="mb-6">
+        <h3 className="text-lg font-semibold text-foreground">Objectifs du client</h3>
+        <p className="text-sm text-muted-foreground">Vue d&apos;ensemble des priorités patrimoniales identifiées pour orienter la stratégie de recommandation. Choisissez les objectifs clients à intégrer au rapport.</p>
+      </div>
+
+      {/* Add objective dialog */}
+      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Ajouter un objectif</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <FormLabel htmlFor="obj-title">Titre</FormLabel>
+              <Input id="obj-title" placeholder="Ex : Optimiser la fiscalité des revenus" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <FormLabel htmlFor="obj-desc">Description</FormLabel>
+              <Input id="obj-desc" placeholder="Décrivez l'objectif en quelques mots..." value={newDesc} onChange={(e) => setNewDesc(e.target.value)} />
+            </div>
           </div>
-        </CardHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddOpen(false)}>Annuler</Button>
+            <Button className="bg-[#0052CC] text-white hover:bg-[#0052CC]/90" onClick={handleAdd} disabled={!newTitle.trim()}>Ajouter</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-        <CardContent className="flex-1 space-y-3 overflow-y-auto">
-          {remarques.map((r, i) => (
-            <div key={i} className="flex items-center gap-4 rounded-lg bg-muted/50 p-4">
-              {/* Check circle */}
-              <div
+      {allObjectives.map((obj, i) => {
+        const isOpen = openIndex === i;
+        const objChecked = isObjectiveComplete(i);
+        const hasQuestions = obj.questions.length > 0;
+        const qCheckedCount = hasQuestions ? obj.questions.filter((_, j) => checkedQuestions.has(`${i}-${j}`)).length : 0;
+        return (
+          <Card
+            key={i}
+            className={cn("transition-colors hover:bg-muted/30", hasQuestions ? "cursor-pointer" : "")}
+            onClick={() => hasQuestions && setOpenIndex(isOpen ? null : i)}
+          >
+            <div className="flex items-start gap-4 p-3">
+              <button
+                type="button"
+                onClick={(e) => toggleObjective(i, e)}
                 className={cn(
-                  "flex size-5 shrink-0 items-center justify-center rounded-full",
-                  r.done
-                    ? "bg-green-600 text-white"
-                    : "border-2 border-muted-foreground/30"
+                  "mt-1 flex size-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors",
+                  objChecked
+                    ? "border-[#0052CC] bg-[#0052CC] text-white"
+                    : "border-muted-foreground/30 hover:border-muted-foreground/60"
                 )}
               >
-                {r.done && <Check className="size-3" />}
-              </div>
-              {/* Title + description */}
+                {objChecked && <Check className="size-3" />}
+              </button>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-foreground truncate">{r.title}</p>
-                <p className="text-sm text-muted-foreground truncate">{r.description}</p>
+                <span className="text-sm font-semibold text-foreground">{obj.title}</span>
+                <p className="mt-1 text-sm text-muted-foreground">{obj.description}</p>
               </div>
-              {/* Assignee badge */}
-              <Badge variant="outline" className="shrink-0 gap-1 text-[11px]">
-                {r.assignee}
-                <ChevronDown className="size-3" />
-              </Badge>
+              <div className="flex shrink-0 items-center gap-2">
+                {hasQuestions && <span className="text-xs text-muted-foreground">{qCheckedCount}/{obj.questions.length}</span>}
+                {hasQuestions && (isOpen ? (
+                  <ChevronUp className="size-4 text-muted-foreground" />
+                ) : (
+                  <ChevronDown className="size-4 text-muted-foreground" />
+                ))}
+              </div>
             </div>
-          ))}
-        </CardContent>
-      </Card>
-    </div>
+            {isOpen && (
+              <div className="border-t px-5 pb-5 pt-4" onClick={(e) => e.stopPropagation()}>
+                <div className="mb-4 flex items-center gap-2">
+                  <Search className="size-3.5 text-[#33ee87]" />
+                  <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Questions de découverte ({qCheckedCount}/{obj.questions.length})
+                  </span>
+                </div>
+                <div className="space-y-0 divide-y rounded-lg border">
+                  {obj.questions.map((q, j) => {
+                    const qKey = `${i}-${j}`;
+                    const qChecked = checkedQuestions.has(qKey);
+                    return (
+                      <div key={j} className="flex items-start gap-4 px-5 py-4">
+                        <button
+                          type="button"
+                          onClick={(e) => toggleQuestion(qKey, e)}
+                          className={cn(
+                            "mt-1 flex size-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors",
+                            qChecked
+                              ? "border-[#0052CC] bg-[#0052CC] text-white"
+                              : "border-muted-foreground/20 hover:border-muted-foreground/50"
+                          )}
+                        >
+                          {qChecked && <Check className="size-3" />}
+                        </button>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-foreground">{q.text}</p>
+                          <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <ArrowRight className="size-3 text-[#33ee87]" />
+                            <span className="italic">{q.hint}</span>
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </Card>
+        );
+      })}
+    </TabsContent>
+  );
+}
+
+interface Preconisation {
+  id: number;
+  title: string;
+  description: string;
+  priority: "Haute" | "Moyenne" | "Basse";
+  status: "À valider" | "Recommandée" | "En cours";
+  metric: string;
+  metricLabel: string;
+  details: string[];
+}
+
+interface PrecoGroup {
+  objective: string;
+  description: string;
+  preconisations: Preconisation[];
+}
+
+const precoData: PrecoGroup[] = [
+  {
+    objective: "Organiser la transmission du patrimoine",
+    description: "Optimiser la succession et anticiper les donations pour réduire la pression fiscale.",
+    preconisations: [
+      { id: 1, title: "Rédaction d'une clause bénéficiaire sur mesure", priority: "Haute", status: "À valider", description: "Personnaliser les clauses bénéficiaires des contrats d'assurance-vie pour adapter la transmission aux objectifs familiaux et optimiser la répartition successorale.", metric: "84 000 €", metricLabel: "Économie estimée", details: ["12 mois · Fiscalité successorale", "Contrats AV concernés : 3"] },
+      { id: 2, title: "Donation en nue-propriété aux enfants", priority: "Haute", status: "Recommandée", description: "Utiliser le démembrement de propriété pour transmettre la nue-propriété du bien, en conservant l'usufruit et en bénéficiant des abattements.", metric: "100 000 €", metricLabel: "Abattement disponible", details: ["6 mois · Transmission anticipée"] },
+      { id: 3, title: "Pacte Dutreil pour les actifs professionnels", priority: "Moyenne", status: "À valider", description: "Si le client détient des parts d'entreprise, le pacte Dutreil permet une exonération de 75% des droits de mutation.", metric: "75 %", metricLabel: "Exonération possible", details: ["24 mois · Engagement de conservation"] },
+    ],
+  },
+  {
+    objective: "Réduire la pression fiscale",
+    description: "Activer les dispositifs de défiscalisation pour optimiser la charge fiscale annuelle.",
+    preconisations: [
+      { id: 4, title: "Versements PER avec rattrapage des plafonds", priority: "Haute", status: "Recommandée", description: "Maximiser les versements sur le Plan Épargne Retraite en utilisant les plafonds non consommés des 3 dernières années.", metric: "14 910 €", metricLabel: "Économie fiscale estimée", details: ["Immédiat · Plafond disponible : 42 600 €"] },
+      { id: 5, title: "Investissement en déficit foncier", priority: "Moyenne", status: "À valider", description: "Acquisition d'un bien ancien avec travaux pour créer du déficit foncier imputable sur le revenu global.", metric: "10 700 €", metricLabel: "Réduction fiscale sur 5 ans", details: ["12 mois · Travaux éligibles"] },
+      { id: 6, title: "Souscription au capital de PME (IR-PME)", priority: "Basse", status: "À valider", description: "Investir dans des PME éligibles pour bénéficier d'une réduction d'impôt de 25% du montant investi.", metric: "2 500 €", metricLabel: "Réduction IR estimée", details: ["6 mois · Blocage 5 ans minimum"] },
+    ],
+  },
+  {
+    objective: "Rééquilibrer l'allocation patrimoniale",
+    description: "Diversifier le patrimoine et réduire la surexposition immobilière (70%) pour améliorer la liquidité.",
+    preconisations: [
+      { id: 7, title: "Ouverture d'un contrat d'assurance-vie multisupport", priority: "Haute", status: "Recommandée", description: "Placer l'épargne disponible sur un contrat multisupport diversifié avec une allocation équilibrée entre fonds euros et UC.", metric: "50 000 €", metricLabel: "Versement initial recommandé", details: ["Immédiat · Profil équilibré"] },
+      { id: 8, title: "Arbitrage vers un PEA pour les productions", priority: "Moyenne", status: "À valider", description: "Ouvrir un PEA pour bénéficier de l'exonération fiscale après 5 ans sur les plus-values et dividendes européens.", metric: "20 000 €", metricLabel: "Capital recommandé à terme", details: ["Immédiat · Horizon 5 ans+"] },
+    ],
+  },
+  {
+    objective: "Combler le gap retraite",
+    description: "Préparer la baisse de 45% des revenus à la retraite par une stratégie de capitalisation anticipée.",
+    preconisations: [
+      { id: 9, title: "Stratégie PER + assurance-vie combinée", priority: "Haute", status: "Recommandée", description: "Combiner un PER pour la déduction fiscale immédiate et une assurance-vie pour la flexibilité de sortie en capital ou rente.", metric: "1 100 €/mois", metricLabel: "Effort d'épargne mensuel", details: ["Long terme · Sortie mixte capital/rente"] },
+      { id: 10, title: "Investissement locatif en LMNP", priority: "Moyenne", status: "À valider", description: "Acquérir un bien en location meublée non professionnelle pour générer des revenus complémentaires à la retraite avec une fiscalité avantageuse.", metric: "800 €/mois", metricLabel: "Revenus nets estimés", details: ["12 mois · Amortissement comptable"] },
+    ],
+  },
+  {
+    objective: "Renforcer la couverture prévoyance",
+    description: "Combler le déficit de couverture décès (2 ans vs 5 ans recommandés) et protéger la famille.",
+    preconisations: [
+      { id: 11, title: "Prévoyance décès complémentaire", priority: "Haute", status: "Recommandée", description: "Souscrire un contrat de prévoyance décès complémentaire pour porter le capital garanti de 70 000 € à 180 000 €.", metric: "110 000 €", metricLabel: "Capital décès additionnel", details: ["Immédiat · ~45 €/mois"] },
+      { id: 12, title: "Garantie incapacité-invalidité", priority: "Haute", status: "Recommandée", description: "Ajouter une garantie maintien de revenu en cas d'arrêt de travail prolongé ou d'invalidité.", metric: "3 000 €/mois", metricLabel: "Rente mensuelle en cas d'invalidité", details: ["Immédiat · Franchise 90 jours"] },
+    ],
+  },
+];
+
+function priorityColor(p: Preconisation["priority"]) {
+  switch (p) {
+    case "Haute": return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400";
+    case "Moyenne": return "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400";
+    case "Basse": return "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400";
+  }
+}
+
+function statusColor(s: Preconisation["status"]) {
+  switch (s) {
+    case "Recommandée": return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400";
+    case "À valider": return "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400";
+    case "En cours": return "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400";
+  }
+}
+
+function PreconisationsContent() {
+  const totalPrecos = precoData.reduce((sum, g) => sum + g.preconisations.length, 0);
+  const recommendedCount = precoData.reduce((sum, g) => sum + g.preconisations.filter((p) => p.status === "Recommandée").length, 0);
+
+  return (
+    <TabsContent value="preconisations" className="mt-3 space-y-8">
+      {/* Grouped preconisations */}
+      {precoData.map((group, gi) => (
+        <div key={gi}>
+          {/* Group header */}
+          <div className="mb-3 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex size-8 items-center justify-center rounded-full bg-[#33ee87]/15 text-[#33ee87]">
+                <CheckCircle2 className="size-4" />
+              </div>
+              <div>
+                <h4 className="text-base font-semibold text-foreground">{group.objective}</h4>
+                <p className="text-xs text-muted-foreground mt-0.5">{group.description}</p>
+              </div>
+            </div>
+            <Badge variant="secondary" className="text-xs">{group.preconisations.length} action{group.preconisations.length > 1 ? "s" : ""}</Badge>
+          </div>
+
+          {/* Preconisation items */}
+          <div className="space-y-3">
+            {group.preconisations.map((preco, pi) => (
+              <Card key={preco.id} className="px-6 py-5">
+                <div className="flex items-start gap-4">
+                  <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-bold text-muted-foreground">
+                    {String(pi + 1).padStart(2, "0")}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-2 flex-wrap">
+                      <span className="text-sm font-semibold text-foreground">{preco.title}</span>
+                      <Badge className={`text-[10px] ${priorityColor(preco.priority)}`}>{preco.priority}</Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{preco.description}</p>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      ))}
+    </TabsContent>
   );
 }
 
@@ -1066,10 +1405,65 @@ export default function ClientDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const loading = useLoading();
   const { id } = use(params);
   const { clients } = useClients();
   const router = useRouter();
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("overview");
+  const [addObjectifOpen, setAddObjectifOpen] = useState(false);
   const client = clients.find((c) => c.id === Number(id));
+
+  if (loading) {
+    return (
+      <AppLayout title={<Skeleton className="h-6 w-48" />}>
+        <div className="w-full space-y-6 pb-8">
+          <div className="flex gap-2">
+            {[0, 1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-9 w-28 rounded-md" />
+            ))}
+          </div>
+          <div className="grid grid-cols-4 gap-4">
+            {[0, 1, 2, 3].map((i) => (
+              <Card key={i} className="px-5 py-4 space-y-2">
+                <Skeleton className="h-3 w-20" />
+                <Skeleton className="h-7 w-24" />
+              </Card>
+            ))}
+          </div>
+          <div className="grid grid-cols-4 gap-4">
+            {[0, 1, 2, 3].map((i) => (
+              <Card key={i} className="p-5 space-y-4">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-7 w-24" />
+                <div className="space-y-3">
+                  <Skeleton className="h-3 w-full" />
+                  <Skeleton className="h-1.5 w-full rounded-full" />
+                  <Skeleton className="h-3 w-full" />
+                  <Skeleton className="h-1.5 w-3/4 rounded-full" />
+                  <Skeleton className="h-3 w-full" />
+                  <Skeleton className="h-1.5 w-1/2 rounded-full" />
+                </div>
+              </Card>
+            ))}
+          </div>
+          <div className="grid grid-cols-4 gap-4">
+            {[0, 1, 2, 3].map((i) => (
+              <Card key={i} className="px-5 py-4 space-y-3">
+                <div className="flex justify-between">
+                  <Skeleton className="h-3 w-20" />
+                  <Skeleton className="h-5 w-16 rounded-full" />
+                </div>
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-3 w-3/4" />
+                <Skeleton className="mt-2 h-7 w-24" />
+              </Card>
+            ))}
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
 
   if (!client) {
     return (
@@ -1089,8 +1483,22 @@ export default function ClientDetailPage({
   const diagDate = "23 mars 2026";
   const data = deriveClientData(client.formData);
   const diagnostic = buildWealthDiagnostic(client.formData);
+  const advisorClient = {
+    netWorth: data.patrimoine,
+    totalAssets: data.actifs.total,
+    totalLiabilities: data.passifs.total,
+    annualIncome: data.revenus.total,
+    realEstateAssets: data.actifs.immobilier.total,
+    cash: data.actifs.epargne.disponibilites,
+    lifeInsurance: data.actifs.epargne.assuranceVie,
+    retirementSavings: data.actifs.epargne.epargneRetraite,
+    occupation: data.profession,
+    employmentStatus: data.csp,
+    maritalStatus: data.situation,
+    childrenCount: data.nbEnfants,
+    wealthScore: diagnostic.globalScore,
+  };
   const categoryAnalysis = buildCategoryAnalysis(client.formData, data, diagnostic);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   return (
     <AppLayout
@@ -1126,10 +1534,19 @@ export default function ClientDetailPage({
           </span>
         </div>
       }
+      actions={
+        <div className="flex items-center gap-2">
+          <Button variant="outline">Modifier</Button>
+          <Button variant="outline" size="icon">
+            <Ellipsis className="size-4" />
+          </Button>
+        </div>
+      }
+      hideIcons
     >
       <div className="w-full space-y-8 pb-8">
         {/* ── Tabs ────────────────────────────────────────────── */}
-        <Tabs defaultValue="overview">
+        <Tabs defaultValue="overview" onValueChange={setActiveTab}>
           <div className="flex items-center justify-between">
             <TabsList className="gap-2">
               <TabsTrigger value="overview">Synthèse</TabsTrigger>
@@ -1137,15 +1554,15 @@ export default function ClientDetailPage({
               <TabsTrigger value="diagnostique">Diagnostique</TabsTrigger>
               <TabsTrigger value="preconisations">Préconisations</TabsTrigger>
             </TabsList>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="icon">
-                <Ellipsis className="size-4" />
+            {activeTab === "objectifs" && (
+              <Button size="sm" className="bg-[#0052CC] text-white hover:bg-[#0052CC]/90" onClick={() => setAddObjectifOpen(true)}>
+                <Plus className="size-3.5 mr-1" />
+                Ajouter
               </Button>
-              <Button>Modifier</Button>
-            </div>
+            )}
           </div>
 
-          <TabsContent value="overview" className="mt-6 space-y-6">
+          <TabsContent value="overview" className="mt-3 space-y-6">
             {/* ── KPI row ──────────────────────────── */}
             <div className="grid grid-cols-4 gap-4">
               <Card className="px-5 py-4">
@@ -1198,21 +1615,21 @@ export default function ClientDetailPage({
                     <span className="font-medium">{fmt(data.actifs.immobilier.biensUsage)}</span>
                   </div>
                   <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                    <div className="h-full rounded-full bg-viz" style={{ width: `${data.actifs.immobilier.total > 0 ? (data.actifs.immobilier.biensUsage / data.actifs.immobilier.total) * 100 : 0}%` }} />
+                    <div className="h-full rounded-full bg-chart-1" style={{ width: `${data.actifs.immobilier.total > 0 ? (data.actifs.immobilier.biensUsage / data.actifs.immobilier.total) * 100 : 0}%` }} />
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Immobilier de rapport</span>
                     <span className="font-medium">{fmt(data.actifs.immobilier.immobilierRapport)}</span>
                   </div>
                   <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                    <div className="h-full rounded-full bg-viz/60" style={{ width: `${data.actifs.immobilier.total > 0 ? (data.actifs.immobilier.immobilierRapport / data.actifs.immobilier.total) * 100 : 0}%` }} />
+                    <div className="h-full rounded-full bg-chart-2" style={{ width: `${data.actifs.immobilier.total > 0 ? (data.actifs.immobilier.immobilierRapport / data.actifs.immobilier.total) * 100 : 0}%` }} />
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Défiscalisant</span>
                     <span className="font-medium">{fmt(data.actifs.immobilier.immobilierDefisc)}</span>
                   </div>
                   <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                    <div className="h-full rounded-full bg-viz/30" style={{ width: `${data.actifs.immobilier.total > 0 ? (data.actifs.immobilier.immobilierDefisc / data.actifs.immobilier.total) * 100 : 0}%` }} />
+                    <div className="h-full rounded-full bg-chart-3" style={{ width: `${data.actifs.immobilier.total > 0 ? (data.actifs.immobilier.immobilierDefisc / data.actifs.immobilier.total) * 100 : 0}%` }} />
                   </div>
                 </CardContent>
               </Card>
@@ -1232,28 +1649,28 @@ export default function ClientDetailPage({
                     <span className="font-medium">{fmt(data.actifs.epargne.disponibilites)}</span>
                   </div>
                   <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                    <div className="h-full rounded-full bg-viz" style={{ width: `${data.actifs.epargne.total > 0 ? (data.actifs.epargne.disponibilites / data.actifs.epargne.total) * 100 : 0}%` }} />
+                    <div className="h-full rounded-full bg-chart-1" style={{ width: `${data.actifs.epargne.total > 0 ? (data.actifs.epargne.disponibilites / data.actifs.epargne.total) * 100 : 0}%` }} />
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Assurance-vie</span>
                     <span className="font-medium">{fmt(data.actifs.epargne.assuranceVie)}</span>
                   </div>
                   <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                    <div className="h-full rounded-full bg-viz/70" style={{ width: `${data.actifs.epargne.total > 0 ? (data.actifs.epargne.assuranceVie / data.actifs.epargne.total) * 100 : 0}%` }} />
+                    <div className="h-full rounded-full bg-chart-2" style={{ width: `${data.actifs.epargne.total > 0 ? (data.actifs.epargne.assuranceVie / data.actifs.epargne.total) * 100 : 0}%` }} />
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Épargne retraite</span>
                     <span className="font-medium">{fmt(data.actifs.epargne.epargneRetraite)}</span>
                   </div>
                   <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                    <div className="h-full rounded-full bg-viz/45" style={{ width: `${data.actifs.epargne.total > 0 ? (data.actifs.epargne.epargneRetraite / data.actifs.epargne.total) * 100 : 0}%` }} />
+                    <div className="h-full rounded-full bg-chart-3" style={{ width: `${data.actifs.epargne.total > 0 ? (data.actifs.epargne.epargneRetraite / data.actifs.epargne.total) * 100 : 0}%` }} />
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Défiscalisation</span>
                     <span className="font-medium">{fmt(data.actifs.epargne.defiscalisation)}</span>
                   </div>
                   <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                    <div className="h-full rounded-full bg-viz/20" style={{ width: `${data.actifs.epargne.total > 0 ? (data.actifs.epargne.defiscalisation / data.actifs.epargne.total) * 100 : 0}%` }} />
+                    <div className="h-full rounded-full bg-chart-4" style={{ width: `${data.actifs.epargne.total > 0 ? (data.actifs.epargne.defiscalisation / data.actifs.epargne.total) * 100 : 0}%` }} />
                   </div>
                 </CardContent>
               </Card>
@@ -1269,7 +1686,7 @@ export default function ClientDetailPage({
                 <CardContent className="flex-1 pb-2">
                   <ChartContainer
                     config={{
-                      score: { label: "Score", color: "var(--primary)" },
+                      score: { label: "Score", color: "var(--chart-1)" },
                     } satisfies ChartConfig}
                     className="mx-auto aspect-square max-h-[300px]"
                   >
@@ -1290,7 +1707,7 @@ export default function ClientDetailPage({
                     </RadarChart>
                   </ChartContainer>
                   <p className="mt-1 flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground">
-                    <span className="size-2.5 rounded-full bg-primary" />
+                    <span className="size-2.5 rounded-full bg-chart-1" />
                     État du patrimoine
                   </p>
                 </CardContent>
@@ -1311,9 +1728,9 @@ export default function ClientDetailPage({
                 <CardContent className="flex flex-1 flex-col items-center justify-center pb-2">
                   <ChartContainer
                     config={{
-                      pretImmo: { label: "Prêt immobilier", color: "oklch(var(--viz))" },
-                      pretPro: { label: "Prêt professionnel", color: "oklch(var(--viz) / 0.5)" },
-                      autresPrets: { label: "Autres prêts", color: "oklch(var(--viz) / 0.2)" },
+                      pretImmo: { label: "Prêt immobilier", color: "var(--chart-1)" },
+                      pretPro: { label: "Prêt professionnel", color: "var(--chart-3)" },
+                      autresPrets: { label: "Autres prêts", color: "var(--chart-5)" },
                     } satisfies ChartConfig}
                     className="mx-auto h-[160px] w-full"
                   >
@@ -1328,9 +1745,9 @@ export default function ClientDetailPage({
                       outerRadius={110}
                       cy="70%"
                     >
-                      <RadialBar dataKey="autresPrets" fill="oklch(var(--viz) / 0.2)" stackId="a" cornerRadius={5} className="stroke-transparent stroke-2" />
-                      <RadialBar dataKey="pretPro" fill="oklch(var(--viz) / 0.5)" stackId="a" cornerRadius={5} className="stroke-transparent stroke-2" />
-                      <RadialBar dataKey="pretImmo" fill="oklch(var(--viz))" stackId="a" cornerRadius={5} className="stroke-transparent stroke-2" />
+                      <RadialBar dataKey="autresPrets" fill="var(--chart-5)" stackId="a" cornerRadius={5} className="stroke-transparent stroke-2" />
+                      <RadialBar dataKey="pretPro" fill="var(--chart-3)" stackId="a" cornerRadius={5} className="stroke-transparent stroke-2" />
+                      <RadialBar dataKey="pretImmo" fill="var(--chart-1)" stackId="a" cornerRadius={5} className="stroke-transparent stroke-2" />
                       <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
                       <PolarRadiusAxis tick={false} tickLine={false} axisLine={false}>
                         <Label
@@ -1362,15 +1779,15 @@ export default function ClientDetailPage({
                   </ChartContainer>
                   <div className="mt-auto flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs">
                     <span className="flex items-center gap-1.5">
-                      <span className="size-2.5 rounded-full" style={{ background: "oklch(var(--viz))" }} />
+                      <span className="size-2.5 rounded-full" style={{ background: "var(--chart-1)" }} />
                       <span className="text-muted-foreground">Prêt immobilier</span>
                     </span>
                     <span className="flex items-center gap-1.5">
-                      <span className="size-2.5 rounded-full" style={{ background: "oklch(var(--viz) / 0.5)" }} />
+                      <span className="size-2.5 rounded-full" style={{ background: "var(--chart-3)" }} />
                       <span className="text-muted-foreground">Prêt professionnel</span>
                     </span>
                     <span className="flex items-center gap-1.5">
-                      <span className="size-2.5 rounded-full" style={{ background: "oklch(var(--viz) / 0.2)" }} />
+                      <span className="size-2.5 rounded-full" style={{ background: "var(--chart-5)" }} />
                       <span className="text-muted-foreground">Autres prêts</span>
                     </span>
                   </div>
@@ -1489,56 +1906,38 @@ export default function ClientDetailPage({
                     {diagnostic.globalScore >= 70 ? "Patrimoine sain" : diagnostic.globalScore >= 50 ? "À optimiser" : "Actions urgentes"}
                   </Badge>
                 </CardHeader>
-                <CardContent className="flex flex-1 flex-col items-center justify-center pb-4">
-                  <ChartContainer
-                    config={{
-                      score: { label: "Score", color: diagnostic.globalScore >= 70 ? "oklch(0.723 0.191 142.7)" : diagnostic.globalScore >= 50 ? "oklch(0.795 0.184 86.047)" : "oklch(0.637 0.237 25.331)" },
-                    } satisfies ChartConfig}
-                    className="mx-auto aspect-square w-full max-w-[150px]"
-                  >
-                    <RadialBarChart
-                      data={[{ browser: "score", visitors: diagnostic.globalScore, fill: "var(--color-score)" }]}
-                      startAngle={0}
-                      endAngle={Math.round((diagnostic.globalScore / 100) * 360)}
-                      innerRadius={55}
-                      outerRadius={70}
-                    >
-                      <PolarGrid
-                        gridType="circle"
-                        radialLines={false}
-                        stroke="none"
-                        className="first:fill-muted last:fill-background"
-                        polarRadius={[70, 55]}
-                      />
-                      <RadialBar dataKey="visitors" cornerRadius={10} />
-                      <PolarRadiusAxis tick={false} tickLine={false} axisLine={false}>
-                        <Label
-                          content={({ viewBox }) => {
-                            if (viewBox && "cx" in viewBox && "cy" in viewBox) {
-                              return (
-                                <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle" dominantBaseline="middle">
-                                  <tspan
-                                    x={viewBox.cx}
-                                    y={viewBox.cy}
-                                    className="fill-foreground text-2xl font-bold"
-                                  >
-                                    {diagnostic.globalScore}
-                                  </tspan>
-                                  <tspan
-                                    x={viewBox.cx}
-                                    y={(viewBox.cy || 0) + 20}
-                                    className="fill-muted-foreground text-xs"
-                                  >
-                                    / 100
-                                  </tspan>
-                                </text>
-                              );
-                            }
-                          }}
-                        />
-                      </PolarRadiusAxis>
-                    </RadialBarChart>
-                  </ChartContainer>
+                <CardContent className="flex flex-1 flex-col justify-center pb-4 pt-6">
+                  {/* Score number */}
+                  <div className="flex items-baseline gap-1 mb-4">
+                    <span className="text-3xl font-bold text-foreground">{diagnostic.globalScore}</span>
+                    <span className="text-sm text-muted-foreground">/ 100</span>
+                  </div>
+
+                  {/* Bullet chart */}
+                  <div className="relative h-6 w-full rounded-md overflow-hidden">
+                    {/* Background zones: red | amber | green */}
+                    <div className="absolute inset-0 flex">
+                      <div className="h-full bg-red-200 dark:bg-red-900/40" style={{ width: "33%" }} />
+                      <div className="h-full bg-amber-200 dark:bg-amber-900/40" style={{ width: "34%" }} />
+                      <div className="h-full bg-green-200 dark:bg-green-900/40" style={{ width: "33%" }} />
+                    </div>
+                    {/* Score bar */}
+                    <div
+                      className={`absolute top-1 bottom-1 left-0 rounded-sm ${
+                        diagnostic.globalScore >= 70 ? "bg-green-500" : diagnostic.globalScore >= 50 ? "bg-amber-500" : "bg-red-500"
+                      }`}
+                      style={{ width: `${diagnostic.globalScore}%` }}
+                    />
+                    {/* Target marker at 70 */}
+                    <div className="absolute top-0 bottom-0 w-0.5 bg-foreground/40" style={{ left: "70%" }} />
+                  </div>
+
+                  {/* Labels */}
+                  <div className="flex justify-between mt-2 text-[10px] text-muted-foreground">
+                    <span>Critique</span>
+                    <span>À optimiser</span>
+                    <span>Sain</span>
+                  </div>
                 </CardContent>
               </Card>
             </div>
@@ -1571,32 +1970,20 @@ export default function ClientDetailPage({
             </div>
           </TabsContent>
 
-          <TabsContent value="objectifs" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Objectifs</CardTitle>
-                <CardDescription>
-                  Définissez et suivez les objectifs patrimoniaux du client.
-                </CardDescription>
-              </CardHeader>
-            </Card>
-          </TabsContent>
+          <ObjectifsContent addOpen={addObjectifOpen} setAddOpen={setAddObjectifOpen} />
 
           <TabsContent value="diagnostique" className="mt-6">
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-foreground">Diagnostic patrimonial du client</h3>
+              <p className="text-sm text-muted-foreground">Évaluation globale de la situation patrimoniale du client, avec scoring par domaine et points d&apos;attention identifiés.</p>
+            </div>
             <DiagnostiqueContent categoryAnalysis={categoryAnalysis} />
           </TabsContent>
 
-          <TabsContent value="preconisations" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Préconisations</CardTitle>
-                <CardDescription>
-                  Retrouvez les recommandations personnalisées pour optimiser votre patrimoine.
-                </CardDescription>
-              </CardHeader>
-            </Card>
-          </TabsContent>
+          <PreconisationsContent />
         </Tabs>
+
+        <AdvisorCopilot client={advisorClient} />
       </div>
     </AppLayout>
   );
