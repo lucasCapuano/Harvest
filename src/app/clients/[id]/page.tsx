@@ -1700,6 +1700,7 @@ export default function ClientDetailPage({
                     <Sparkles className="size-4" />
                     Radar client
                   </CardTitle>
+                  <CardDescription className="text-xs text-center">Évaluation multidimensionnelle de la maturité patrimoniale du client.</CardDescription>
                 </CardHeader>
                 <CardContent className="flex-1 pb-2">
                   <ChartContainer
@@ -1924,6 +1925,7 @@ export default function ClientDetailPage({
                     {diagnostic.globalScore >= 70 ? "Patrimoine sain" : diagnostic.globalScore >= 50 ? "À optimiser" : "Actions urgentes"}
                   </Badge>
                 </CardHeader>
+                <p className="px-4 text-xs text-muted-foreground mt-1">Indicateur global de santé patrimoniale basé sur 6 critères clés.</p>
                 <CardContent className="flex flex-1 flex-col justify-center pb-4 pt-6">
                   {/* Score number */}
                   <div className="flex items-baseline gap-1 mb-4">
