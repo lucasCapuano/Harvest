@@ -28,10 +28,10 @@ export function AppLayout({
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-6">
+        <header className="flex h-16 shrink-0 items-center gap-2 border-b" style={{ paddingLeft: "32px", paddingRight: "32px" }}>
           <div className="flex flex-1 items-center justify-between">
             <div className="flex items-center gap-4">
-              <h1 className="text-lg font-semibold text-foreground">{title}</h1>
+              <h1 className="text-[20px] font-semibold text-foreground">{title}</h1>
               {subtitle && <>{subtitle}</>}
             </div>
             <div className="flex items-center gap-2">
@@ -58,7 +58,7 @@ export function AppLayout({
             </div>
           </div>
         </header>
-        <div className="flex flex-1 flex-col overflow-hidden p-6">
+        <div className="flex flex-1 flex-col overflow-hidden" style={{ padding: "32px" }}>
           {children}
         </div>
       </SidebarInset>

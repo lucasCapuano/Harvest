@@ -25,21 +25,21 @@ interface AppCard {
 const essentialApps: AppCard[] = [
   {
     name: "Big",
-    description: "Solution digitale de gestion de patrimoine en SaaS",
+    description: "Bilans patrimoniaux puissants pour un conseil expert et à forte valeur ajoutée.",
     gradient: ["#2C42DD", "#5B6EF5"],
     subscribed: true,
     action: { label: "Ouvrir", variant: "default" },
   },
   {
     name: "O2S",
-    description: "Gérez vos activités avec un CRM patrimonial",
+    description: "Le CRM patrimonial pour piloter, centraliser et performer au quotidien.",
     gradient: ["#1B998B", "#4ECDC4"],
     subscribed: true,
     action: { label: "Ouvrir", variant: "default" },
   },
   {
     name: "Fidnet",
-    description: "Solution digitale de gestion de patrimoine en SaaS",
+    description: "Des contenus experts pour fiabiliser et accélérer chaque recommandation.",
     gradient: ["#F99E29", "#FBD37F"],
     action: { label: "Demander une démo", variant: "outline" },
   },
@@ -86,7 +86,7 @@ const requestApps: AppCard[] = [
 
 function EssentialCard({ app }: { app: AppCard }) {
   return (
-    <Card className="flex-1 justify-between gap-3 p-6">
+    <Card className="flex-1 justify-between gap-3" style={{ padding: "20px" }}>
       <div className="flex flex-col gap-3">
         <div className="flex items-center gap-2">
           <ProductIcon
@@ -113,21 +113,20 @@ function EssentialCard({ app }: { app: AppCard }) {
             </Button>
           )}
         </div>
-        <p className="line-clamp-2 text-sm text-muted-foreground">{app.description}</p>
+        <p className="line-clamp-2 text-sm" style={{ color: "rgba(0, 0, 17, 0.53)" }}>{app.description}</p>
       </div>
       {app.action && (
-        <div className="mt-auto flex justify-end">
+        <div className="mt-4 flex justify-end">
           {app.action.variant === "default" ? (
             <Button
-              size="sm"
               className="gap-1.5 bg-[#0052CC] text-white transition-all hover:bg-[#0052CC]/90"
             >
-              <ExternalLink className="size-3.5" />
+              <ExternalLink className="size-4" />
               {app.action.label}
             </Button>
           ) : (
-            <Button variant="outline" size="sm" className="gap-1.5">
-              <ExternalLink className="size-3.5" />
+            <Button variant="outline" className="gap-1.5">
+              <ExternalLink className="size-4" />
               {app.action.label}
             </Button>
           )}
@@ -139,7 +138,7 @@ function EssentialCard({ app }: { app: AppCard }) {
 
 function RequestCard({ app }: { app: AppCard }) {
   return (
-    <Card className="relative gap-2 p-6">
+    <Card className="relative gap-2" style={{ padding: "20px" }}>
       <div className="flex items-center gap-2">
         <ProductIcon
           gradientStart={app.gradient[0]}
@@ -207,7 +206,7 @@ export default function ApplicationsPage() {
     <AppLayout title="Applications">
           {/* Harvest's essential */}
           <section className="mb-10">
-            <h2 className="mb-4 text-xl font-semibold text-foreground">
+            <h2 className="mb-4 text-[18px] font-semibold text-foreground">
               Les essentiels Harvest
             </h2>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -219,10 +218,10 @@ export default function ApplicationsPage() {
 
           {/* Available by request */}
           <section>
-            <h2 className="mb-4 text-xl font-semibold text-foreground">
+            <h2 className="mb-4 text-[18px] font-semibold text-foreground">
               Disponibles sur demande
             </h2>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {requestApps.map((app) => (
                 <RequestCard key={app.name} app={app} />
               ))}
@@ -231,7 +230,7 @@ export default function ApplicationsPage() {
 
           {/* Nos agents (hidden) */}
           <section className="mt-10 hidden">
-            <h2 className="mb-4 text-xl font-semibold text-foreground">
+            <h2 className="mb-4 text-[18px] font-semibold text-foreground">
               Nos agents
             </h2>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">

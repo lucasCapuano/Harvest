@@ -1164,7 +1164,7 @@ function ObjectifsContent({ addOpen, setAddOpen }: { addOpen: boolean; setAddOpe
   return (
     <TabsContent value="objectifs" className="mt-6 space-y-4">
       <div className="mb-6">
-        <h3 className="text-lg font-semibold text-foreground">Objectifs du client</h3>
+        <h3 className="text-[18px] font-semibold text-foreground">Objectifs du client</h3>
         <p className="text-sm text-muted-foreground">Vue d&apos;ensemble des priorités patrimoniales identifiées pour orienter la stratégie de recommandation. Choisissez les objectifs clients à intégrer au rapport.</p>
       </div>
 
@@ -1564,7 +1564,7 @@ export default function ClientDetailPage({
 
           <TabsContent value="overview" className="mt-6 space-y-6">
             <div className="mb-6">
-              <h3 className="text-lg font-semibold text-foreground">Synthèse patrimoniale</h3>
+              <h3 className="text-[18px] font-semibold text-foreground">Synthèse patrimoniale</h3>
               <p className="text-sm text-muted-foreground">Vue d&apos;ensemble du patrimoine et du profil client.</p>
             </div>
             {/* ── KPI row ──────────────────────────── */}
@@ -1994,7 +1994,7 @@ export default function ClientDetailPage({
 
           <TabsContent value="diagnostique" className="mt-6">
             <div className="mb-6">
-              <h3 className="text-lg font-semibold text-foreground">Diagnostic patrimonial du client</h3>
+              <h3 className="text-[18px] font-semibold text-foreground">Diagnostic patrimonial du client</h3>
               <p className="text-sm text-muted-foreground">Évaluation globale de la situation patrimoniale du client, avec scoring par domaine et points d&apos;attention identifiés.</p>
             </div>
             <DiagnostiqueContent categoryAnalysis={categoryAnalysis} />

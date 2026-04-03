@@ -174,7 +174,7 @@ export default function ActualitesPage() {
       {/* ── Hero section ── */}
       <section className="mb-10">
         <div className="mb-3 flex items-center gap-2">
-          <h2 className="text-[20px] font-semibold text-foreground">Les actualités du mois</h2>
+          <h2 className="text-[18px] font-semibold text-foreground">Les actualités du mois</h2>
         </div>
         <div className="grid grid-cols-2 gap-6">
           {/* Main featured */}
@@ -215,7 +215,7 @@ export default function ActualitesPage() {
       {/* ── Pour vous ── */}
       <section className="mb-10">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-[20px] font-semibold text-foreground">Pour vous</h2>
+          <h2 className="text-[18px] font-semibold text-foreground">Pour vous</h2>
           <span className="text-xs text-muted-foreground">Basé sur vos centres d&apos;intérêt</span>
         </div>
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
@@ -250,7 +250,7 @@ export default function ActualitesPage() {
       {/* ── Vos thèmes ── */}
       <section className="mb-10">
         <div className="mb-3 flex items-center gap-2">
-          <h2 className="text-[20px] font-semibold text-foreground">Vos thèmes</h2>
+          <h2 className="text-[18px] font-semibold text-foreground">Vos thèmes</h2>
         </div>
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3 mb-3">
           {themes.map((theme) => (
