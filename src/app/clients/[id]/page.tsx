@@ -1562,7 +1562,11 @@ export default function ClientDetailPage({
             )}
           </div>
 
-          <TabsContent value="overview" className="mt-3 space-y-6">
+          <TabsContent value="overview" className="mt-6 space-y-6">
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-foreground">Synthèse patrimoniale</h3>
+              <p className="text-sm text-muted-foreground">Vue d&apos;ensemble du patrimoine et du profil client.</p>
+            </div>
             {/* ── KPI row ──────────────────────────── */}
             <div className="grid grid-cols-4 gap-4">
               <Card className="px-5 py-4">
@@ -1602,75 +1606,89 @@ export default function ClientDetailPage({
 
               {/* Actifs immobiliers */}
               <Card>
-                <CardHeader className="pb-3">
+                <CardHeader className="pb-0">
                   <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
                     <Home className="size-3.5" />
                     Actifs immobiliers
                   </div>
-                  <p className="mt-3 text-2xl font-bold">{fmt(data.actifs.immobilier.total)}</p>
+                  <p className="mt-2 text-2xl font-bold">{fmt(data.actifs.immobilier.total)}</p>
                 </CardHeader>
-                <CardContent className="space-y-5 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Biens d&apos;usage</span>
-                    <span className="font-medium">{fmt(data.actifs.immobilier.biensUsage)}</span>
+                <CardContent className="text-sm" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                  <div className="space-y-1">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Biens d&apos;usage</span>
+                      <span className="font-medium">{fmt(data.actifs.immobilier.biensUsage)}</span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                      <div className="h-full rounded-full bg-chart-1" style={{ width: `${data.actifs.immobilier.total > 0 ? (data.actifs.immobilier.biensUsage / data.actifs.immobilier.total) * 100 : 0}%` }} />
+                    </div>
                   </div>
-                  <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                    <div className="h-full rounded-full bg-chart-1" style={{ width: `${data.actifs.immobilier.total > 0 ? (data.actifs.immobilier.biensUsage / data.actifs.immobilier.total) * 100 : 0}%` }} />
+                  <div className="space-y-1">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Immobilier de rapport</span>
+                      <span className="font-medium">{fmt(data.actifs.immobilier.immobilierRapport)}</span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                      <div className="h-full rounded-full bg-chart-2" style={{ width: `${data.actifs.immobilier.total > 0 ? (data.actifs.immobilier.immobilierRapport / data.actifs.immobilier.total) * 100 : 0}%` }} />
+                    </div>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Immobilier de rapport</span>
-                    <span className="font-medium">{fmt(data.actifs.immobilier.immobilierRapport)}</span>
-                  </div>
-                  <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                    <div className="h-full rounded-full bg-chart-2" style={{ width: `${data.actifs.immobilier.total > 0 ? (data.actifs.immobilier.immobilierRapport / data.actifs.immobilier.total) * 100 : 0}%` }} />
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Défiscalisant</span>
-                    <span className="font-medium">{fmt(data.actifs.immobilier.immobilierDefisc)}</span>
-                  </div>
-                  <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                    <div className="h-full rounded-full bg-chart-3" style={{ width: `${data.actifs.immobilier.total > 0 ? (data.actifs.immobilier.immobilierDefisc / data.actifs.immobilier.total) * 100 : 0}%` }} />
+                  <div className="space-y-1">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Défiscalisant</span>
+                      <span className="font-medium">{fmt(data.actifs.immobilier.immobilierDefisc)}</span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                      <div className="h-full rounded-full bg-chart-3" style={{ width: `${data.actifs.immobilier.total > 0 ? (data.actifs.immobilier.immobilierDefisc / data.actifs.immobilier.total) * 100 : 0}%` }} />
+                    </div>
                   </div>
                 </CardContent>
               </Card>
 
               {/* Épargne & Prévoyance */}
               <Card>
-                <CardHeader className="pb-3">
+                <CardHeader className="pb-0">
                   <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
                     <PiggyBank className="size-3.5" />
                     Épargne & Prévoyance
                   </div>
-                  <p className="mt-3 text-2xl font-bold">{fmt(data.actifs.epargne.total)}</p>
+                  <p className="mt-2 text-2xl font-bold">{fmt(data.actifs.epargne.total)}</p>
                 </CardHeader>
-                <CardContent className="space-y-5 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Disponibilités</span>
-                    <span className="font-medium">{fmt(data.actifs.epargne.disponibilites)}</span>
+                <CardContent className="text-sm" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                  <div className="space-y-1">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Disponibilités</span>
+                      <span className="font-medium">{fmt(data.actifs.epargne.disponibilites)}</span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                      <div className="h-full rounded-full bg-chart-1" style={{ width: `${data.actifs.epargne.total > 0 ? (data.actifs.epargne.disponibilites / data.actifs.epargne.total) * 100 : 0}%` }} />
+                    </div>
                   </div>
-                  <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                    <div className="h-full rounded-full bg-chart-1" style={{ width: `${data.actifs.epargne.total > 0 ? (data.actifs.epargne.disponibilites / data.actifs.epargne.total) * 100 : 0}%` }} />
+                  <div className="space-y-1">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Assurance-vie</span>
+                      <span className="font-medium">{fmt(data.actifs.epargne.assuranceVie)}</span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                      <div className="h-full rounded-full bg-chart-2" style={{ width: `${data.actifs.epargne.total > 0 ? (data.actifs.epargne.assuranceVie / data.actifs.epargne.total) * 100 : 0}%` }} />
+                    </div>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Assurance-vie</span>
-                    <span className="font-medium">{fmt(data.actifs.epargne.assuranceVie)}</span>
+                  <div className="space-y-1">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Épargne retraite</span>
+                      <span className="font-medium">{fmt(data.actifs.epargne.epargneRetraite)}</span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                      <div className="h-full rounded-full bg-chart-3" style={{ width: `${data.actifs.epargne.total > 0 ? (data.actifs.epargne.epargneRetraite / data.actifs.epargne.total) * 100 : 0}%` }} />
+                    </div>
                   </div>
-                  <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                    <div className="h-full rounded-full bg-chart-2" style={{ width: `${data.actifs.epargne.total > 0 ? (data.actifs.epargne.assuranceVie / data.actifs.epargne.total) * 100 : 0}%` }} />
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Épargne retraite</span>
-                    <span className="font-medium">{fmt(data.actifs.epargne.epargneRetraite)}</span>
-                  </div>
-                  <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                    <div className="h-full rounded-full bg-chart-3" style={{ width: `${data.actifs.epargne.total > 0 ? (data.actifs.epargne.epargneRetraite / data.actifs.epargne.total) * 100 : 0}%` }} />
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Défiscalisation</span>
-                    <span className="font-medium">{fmt(data.actifs.epargne.defiscalisation)}</span>
-                  </div>
-                  <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                    <div className="h-full rounded-full bg-chart-4" style={{ width: `${data.actifs.epargne.total > 0 ? (data.actifs.epargne.defiscalisation / data.actifs.epargne.total) * 100 : 0}%` }} />
+                  <div className="space-y-1">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Défiscalisation</span>
+                      <span className="font-medium">{fmt(data.actifs.epargne.defiscalisation)}</span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                      <div className="h-full rounded-full bg-chart-4" style={{ width: `${data.actifs.epargne.total > 0 ? (data.actifs.epargne.defiscalisation / data.actifs.epargne.total) * 100 : 0}%` }} />
+                    </div>
                   </div>
                 </CardContent>
               </Card>
