@@ -15,13 +15,18 @@ export default function AlertesLoading() {
       </div>
 
       <div className="flex-1 p-6">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <Skeleton className="h-6 w-24" />
-          <div className="flex gap-2">
+        {/* Header bar: title + icons */}
+        <div className="flex items-center justify-between mb-4">
+          <Skeleton className="h-5 w-24" />
+          <div className="flex gap-2 items-center">
             <Skeleton className="size-8 rounded-md" />
             <Skeleton className="size-8 rounded-md" />
+            <Skeleton className="h-8 w-16 rounded-md" />
           </div>
+        </div>
+        {/* Page title */}
+        <div className="mb-6">
+          <Skeleton className="h-6 w-24" />
         </div>
 
         {/* Stat cards */}
@@ -41,9 +46,12 @@ export default function AlertesLoading() {
               <Skeleton key={i} className="h-8 w-28 rounded-md" />
             ))}
           </div>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
             <Skeleton className="h-9 w-48 rounded-md" />
-            <Skeleton className="h-9 w-20 rounded-md" />
+            <div className="flex items-center rounded-lg border bg-muted/50 p-0.5 gap-0.5">
+              <Skeleton className="size-7 rounded-md" />
+              <Skeleton className="size-7 rounded-md" />
+            </div>
           </div>
         </div>
 

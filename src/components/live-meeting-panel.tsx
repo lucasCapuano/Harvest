@@ -497,7 +497,7 @@ export function LiveMeetingPanel() {
           {!isRecording && scriptIdxRef.current < MEETING_SCRIPT.length && (
             <button
               onClick={resumeRecording}
-              className="flex items-center gap-1.5 rounded-md bg-[#0052CC] px-2.5 py-1 text-xs font-medium text-white transition-colors hover:bg-[#0052CC]/90"
+              className="flex items-center gap-1.5 rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
             >
               <Play className="size-3" />
               Reprendre

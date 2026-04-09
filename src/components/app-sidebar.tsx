@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { HarvestLogo } from "@/components/harvest-logo";
@@ -11,6 +12,7 @@ import {
   GraduationCap,
   Play,
   Send,
+  X,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -41,17 +43,15 @@ export function AppSidebar() {
   const pathname = usePathname();
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
+  const [showInvite, setShowInvite] = useState(true);
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className={collapsed ? "p-2" : "p-4"}>
-        <div className={collapsed ? "flex justify-center" : "flex items-center justify-between"}>
-          <div className={collapsed ? "hidden" : ""}>
-            <Link href="/applications">
-              <HarvestLogo className="h-5 w-auto" />
-            </Link>
-          </div>
-          <SidebarTrigger />
+      <SidebarHeader className={collapsed ? "flex h-16 items-center justify-center px-2" : "flex h-16 justify-center px-5"}>
+        <div className={collapsed ? "hidden" : ""}>
+          <Link href="/applications">
+            <HarvestLogo className="h-5 w-auto" />
+          </Link>
         </div>
       </SidebarHeader>
 
@@ -69,9 +69,9 @@ export function AppSidebar() {
                       render={<Link href={item.href} />}
                       isActive={isActive}
                       tooltip={item.label}
-                      className={isActive ? "font-semibold text-[#1C1C1D] dark:text-foreground" : "text-[#5B5B64] dark:text-[rgb(91,91,100)]"}
+                      className={isActive ? "font-semibold text-foreground" : "text-muted-foreground"}
                     >
-                        <item.icon className={isActive ? "text-[rgb(28,28,29)]" : "text-[rgb(120,120,129)]"} />
+                        <item.icon className={isActive ? "text-foreground" : "text-muted-foreground"} />
                         <span className="font-medium">{item.label}</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -83,13 +83,6 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter>
-        <div className="rounded-xl border bg-white dark:bg-card p-4 mx-2 mb-2">
-          <div className="flex size-9 items-center justify-center rounded-full bg-muted mb-3">
-            <Send className="size-4 text-muted-foreground" />
-          </div>
-          <p className="text-sm font-semibold text-foreground">Inviter un collaborateur</p>
-          <p className="text-xs text-muted-foreground mt-1">Partagez l&apos;accès avec votre équipe pour collaborer ensemble.</p>
-        </div>
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg">

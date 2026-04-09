@@ -215,7 +215,7 @@ export default function AlertesPage() {
 
   if (loading) {
     return (
-      <AppLayout title={<Skeleton className="h-6 w-24" />}>
+      <AppLayout title="Alertes">
         <div className="mb-6 grid grid-cols-3 gap-4">
           {[0, 1, 2].map((i) => (
             <Card key={i} className="p-4 space-y-2">
@@ -230,9 +230,12 @@ export default function AlertesPage() {
               <Skeleton key={i} className="h-8 w-28 rounded-md" />
             ))}
           </div>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
             <Skeleton className="h-9 w-48 rounded-md" />
-            <Skeleton className="h-9 w-20 rounded-md" />
+            <div className="flex items-center rounded-lg border bg-muted/50 p-0.5 gap-0.5">
+              <Skeleton className="size-7 rounded-md" />
+              <Skeleton className="size-7 rounded-md" />
+            </div>
           </div>
         </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 auto-rows-fr">

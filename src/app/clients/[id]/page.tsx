@@ -4,13 +4,13 @@ import { use, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AppLayout } from "@/components/app-layout";
 import { cn } from "@/lib/utils";
+import { ConversationProvider } from "@elevenlabs/react";
 import { useClients } from "@/lib/clients-store";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardDescription, CardAction, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useLoading } from "@/hooks/use-loading";
+
 import AdvisorCopilot from "@/components/AdvisorCopilot";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -19,7 +19,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
-import { Bar, BarChart, CartesianGrid, Cell, Label, Line, LineChart, Pie, PieChart, PolarAngleAxis, PolarGrid, Radar, RadarChart, PolarRadiusAxis, RadialBar, RadialBarChart, ReferenceLine, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, Cell, Label, Line, LineChart, PolarAngleAxis, PolarGrid, Radar, RadarChart, PolarRadiusAxis, RadialBar, RadialBarChart, ReferenceLine, XAxis, YAxis } from "recharts";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -60,6 +60,7 @@ import {
   ListChecks,
   Plus,
   BookOpen,
+  Download,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -168,7 +169,7 @@ const waterfallChartConfig = {
   invisible: { label: "" },
 } satisfies ChartConfig;
 
-function RevenusWaterfallChart({ data }: { data: ReturnType<typeof deriveClientData> }) {
+function RevenusWaterfallChart({ data, className }: { data: ReturnType<typeof deriveClientData>; className?: string }) {
   const chartData = useMemo(() => {
     // Build waterfall: revenues stack up, charges subtract
     let running = 0;
@@ -205,13 +206,13 @@ function RevenusWaterfallChart({ data }: { data: ReturnType<typeof deriveClientD
   }, [data]);
 
   return (
-    <Card className="flex flex-col">
+    <Card className={cn("flex flex-col", className)}>
       <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-sm">
-          <Receipt className="size-4" />
+        <CardDescription className="flex items-center gap-2">
+          <Receipt className="size-3.5" />
           Revenus & Charges
-        </CardTitle>
-        <CardDescription className="text-xs">Disponible net : {fmt(data.revenus.total - data.charges.total)}</CardDescription>
+        </CardDescription>
+        <CardTitle className="text-2xl font-bold tabular-nums">{fmt(data.revenus.total - data.charges.total)}</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-1 flex-col pb-2">
         <ChartContainer config={waterfallChartConfig} className="h-[170px] w-full">
@@ -255,17 +256,17 @@ function RevenusWaterfallChart({ data }: { data: ReturnType<typeof deriveClientD
             </Bar>
           </BarChart>
         </ChartContainer>
-          <div className="mt-auto flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs">
-            <span className="flex items-center gap-1.5">
-              <span className="size-2.5 rounded-full" style={{ background: "oklch(0.723 0.219 149.579)" }} />
-              <span className="text-muted-foreground">Revenus</span>
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="size-2.5 rounded-full" style={{ background: "lab(55.4814 75.0732 48.8528)" }} />
-              <span className="text-muted-foreground">Charges</span>
-            </span>
-          </div>
       </CardContent>
+      <CardFooter className="flex-wrap justify-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+        <span className="flex items-center gap-1.5">
+          <span className="size-2 rounded-[2px]" style={{ background: "oklch(0.723 0.219 149.579)" }} />
+          Revenus
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="size-2 rounded-[2px]" style={{ background: "lab(55.4814 75.0732 48.8528)" }} />
+          Charges
+        </span>
+      </CardFooter>
     </Card>
   );
 }
@@ -305,11 +306,11 @@ function EvolutionLineChart({ data }: { data: ReturnType<typeof deriveClientData
   return (
     <Card className="flex flex-col w-full">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-sm">
-          <TrendingUp className="size-4" />
+        <CardDescription className="flex items-center gap-2">
+          <TrendingUp className="size-3.5" />
           Évolution Actifs / Passifs
-        </CardTitle>
-        <CardDescription className="text-xs">12 derniers mois</CardDescription>
+        </CardDescription>
+        <CardTitle>12 derniers mois</CardTitle>
       </CardHeader>
       <CardContent>
         <ChartContainer config={evolutionChartConfig} className="h-[200px] w-full">
@@ -344,107 +345,6 @@ function EvolutionLineChart({ data }: { data: ReturnType<typeof deriveClientData
           </LineChart>
         </ChartContainer>
       </CardContent>
-    </Card>
-  );
-}
-
-/* ── Pie chart config ────────────────────────────────────── */
-const patrimoineChartConfig = {
-  value: { label: "Montant" },
-  immobilier: { label: "Immobilier", color: "var(--chart-1)" },
-  epargne: { label: "Épargne", color: "var(--chart-3)" },
-  professionnel: { label: "Professionnel", color: "var(--chart-5)" },
-} satisfies ChartConfig;
-
-function PatrimoinePieChart({ data }: { data: ReturnType<typeof deriveClientData> }) {
-  const chartData = useMemo(() => {
-    const items = [
-      { name: "immobilier", value: data.actifs.immobilier.total, fill: "var(--chart-1)" },
-      { name: "epargne", value: data.actifs.epargne.total, fill: "var(--chart-3)" },
-    ];
-    if (data.actifs.professionnel > 0) {
-      items.push({ name: "professionnel", value: data.actifs.professionnel, fill: "var(--chart-5)" });
-    }
-    return items;
-  }, [data]);
-
-  const totalPatrimoine = data.patrimoine;
-
-  return (
-    <Card className="flex flex-col">
-      <CardHeader className="pb-0">
-        <CardTitle className="flex items-center gap-2 text-sm">
-          <Landmark className="size-4" />
-          Répartition du patrimoine
-        </CardTitle>
-        <CardDescription className="text-xs">Patrimoine net : {fmt(totalPatrimoine)}</CardDescription>
-      </CardHeader>
-      <CardContent className="flex-1 flex items-center justify-center pb-0">
-        <ChartContainer
-          config={patrimoineChartConfig}
-          className="mx-auto aspect-square h-full max-h-[250px]"
-        >
-          <PieChart>
-            <ChartTooltip
-              cursor={false}
-              content={<ChartTooltipContent hideLabel />}
-            />
-            <Pie
-              data={chartData}
-              dataKey="value"
-              nameKey="name"
-              innerRadius={60}
-              strokeWidth={5}
-            >
-              <Label
-                content={({ viewBox }) => {
-                  if (viewBox && "cx" in viewBox && "cy" in viewBox) {
-                    return (
-                      <text
-                        x={viewBox.cx}
-                        y={viewBox.cy}
-                        textAnchor="middle"
-                        dominantBaseline="middle"
-                      >
-                        <tspan
-                          x={viewBox.cx}
-                          y={viewBox.cy}
-                          className="fill-foreground text-2xl font-bold"
-                        >
-                          {fmt(data.actifs.total)}
-                        </tspan>
-                        <tspan
-                          x={viewBox.cx}
-                          y={(viewBox.cy || 0) + 24}
-                          className="fill-muted-foreground text-xs"
-                        >
-                          Total actifs
-                        </tspan>
-                      </text>
-                    );
-                  }
-                }}
-              />
-            </Pie>
-          </PieChart>
-        </ChartContainer>
-      </CardContent>
-      <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 px-4 pb-4 text-xs text-muted-foreground">
-        <span className="flex items-center gap-1.5">
-          <span className="size-2.5 rounded-full bg-chart-1" />
-          Immobilier ({Math.round((data.actifs.immobilier.total / data.actifs.total) * 100)}%)
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="size-2.5 rounded-full bg-chart-3" />
-          Épargne ({Math.round((data.actifs.epargne.total / data.actifs.total) * 100)}%)
-        </span>
-        {data.actifs.professionnel > 0 && (
-          <span className="flex items-center gap-1.5">
-            <span className="size-2.5 rounded-full bg-chart-5" />
-            Pro. ({Math.round((data.actifs.professionnel / data.actifs.total) * 100)}%)
-          </span>
-        )}
-      </div>
     </Card>
   );
 }
@@ -956,7 +856,7 @@ function DiagnostiqueContent({ categoryAnalysis }: { categoryAnalysis: CategoryA
         </div>
 
         {/* Score bars per category */}
-        <div className="grid grid-cols-6 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           {categoryAnalysis.map((cat) => (
             <div key={cat.category}>
               <div className="flex items-center justify-between mb-1.5">
@@ -1000,7 +900,7 @@ function DiagnostiqueContent({ categoryAnalysis }: { categoryAnalysis: CategoryA
             </button>
           ))}
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3" style={{ gap: "16px" }}>
+        <div className="grid grid-cols-1 xl:grid-cols-2" style={{ gap: "16px" }}>
           {categoryAnalysis
             .filter((cat) => !activeCat || cat.category === activeCat)
             .flatMap((cat) =>
@@ -1021,7 +921,7 @@ function DiagnostiqueContent({ categoryAnalysis }: { categoryAnalysis: CategoryA
                     className={cn(
                       "mt-1 flex size-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors",
                       checkedItems.has(item.title)
-                        ? "border-[#0052CC] bg-[#0052CC] text-white"
+                        ? "border-primary bg-primary text-primary-foreground"
                         : "border-muted-foreground/30 hover:border-muted-foreground/60"
                     )}
                   >
@@ -1162,12 +1062,7 @@ function ObjectifsContent({ addOpen, setAddOpen }: { addOpen: boolean; setAddOpe
   };
 
   return (
-    <TabsContent value="objectifs" className="mt-6 space-y-4">
-      <div className="mb-6">
-        <h3 className="text-[18px] font-semibold text-foreground">Objectifs du client</h3>
-        <p className="text-sm text-muted-foreground">Vue d&apos;ensemble des priorités patrimoniales identifiées pour orienter la stratégie de recommandation. Choisissez les objectifs clients à intégrer au rapport.</p>
-      </div>
-
+    <TabsContent value="objectifs" className="space-y-4">
       {/* Add objective dialog */}
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent className="sm:max-w-md">
@@ -1186,7 +1081,7 @@ function ObjectifsContent({ addOpen, setAddOpen }: { addOpen: boolean; setAddOpe
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAddOpen(false)}>Annuler</Button>
-            <Button className="bg-[#0052CC] text-white hover:bg-[#0052CC]/90" onClick={handleAdd} disabled={!newTitle.trim()}>Ajouter</Button>
+            <Button className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={handleAdd} disabled={!newTitle.trim()}>Ajouter</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1209,7 +1104,7 @@ function ObjectifsContent({ addOpen, setAddOpen }: { addOpen: boolean; setAddOpe
                 className={cn(
                   "mt-1 flex size-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors",
                   objChecked
-                    ? "border-[#0052CC] bg-[#0052CC] text-white"
+                    ? "border-primary bg-primary text-primary-foreground"
                     : "border-muted-foreground/30 hover:border-muted-foreground/60"
                 )}
               >
@@ -1231,7 +1126,7 @@ function ObjectifsContent({ addOpen, setAddOpen }: { addOpen: boolean; setAddOpe
             {isOpen && (
               <div className="border-t px-5 pb-5 pt-4" onClick={(e) => e.stopPropagation()}>
                 <div className="mb-4 flex items-center gap-2">
-                  <Search className="size-3.5 text-[#33ee87]" />
+                  <Search className="size-3.5 text-emerald-500 dark:text-emerald-400" />
                   <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     Questions de découverte ({qCheckedCount}/{obj.questions.length})
                   </span>
@@ -1248,7 +1143,7 @@ function ObjectifsContent({ addOpen, setAddOpen }: { addOpen: boolean; setAddOpe
                           className={cn(
                             "mt-1 flex size-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors",
                             qChecked
-                              ? "border-[#0052CC] bg-[#0052CC] text-white"
+                              ? "border-primary bg-primary text-primary-foreground"
                               : "border-muted-foreground/20 hover:border-muted-foreground/50"
                           )}
                         >
@@ -1257,7 +1152,7 @@ function ObjectifsContent({ addOpen, setAddOpen }: { addOpen: boolean; setAddOpe
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-foreground">{q.text}</p>
                           <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <ArrowRight className="size-3 text-[#33ee87]" />
+                            <ArrowRight className="size-3 text-emerald-500 dark:text-emerald-400" />
                             <span className="italic">{q.hint}</span>
                           </p>
                         </div>
@@ -1357,14 +1252,14 @@ function PreconisationsContent() {
   const recommendedCount = precoData.reduce((sum, g) => sum + g.preconisations.filter((p) => p.status === "Recommandée").length, 0);
 
   return (
-    <TabsContent value="preconisations" className="mt-3 space-y-8">
+    <TabsContent value="preconisations" className="space-y-8">
       {/* Grouped preconisations */}
       {precoData.map((group, gi) => (
         <div key={gi}>
           {/* Group header */}
           <div className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex size-8 items-center justify-center rounded-full bg-[#33ee87]/15 text-[#33ee87]">
+              <div className="flex size-8 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-500 dark:text-emerald-400">
                 <CheckCircle2 className="size-4" />
               </div>
               <div>
@@ -1405,7 +1300,6 @@ export default function ClientDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const loading = useLoading();
   const { id } = use(params);
   const { clients } = useClients();
   const router = useRouter();
@@ -1414,67 +1308,14 @@ export default function ClientDetailPage({
   const [addObjectifOpen, setAddObjectifOpen] = useState(false);
   const client = clients.find((c) => c.id === Number(id));
 
-  if (loading) {
-    return (
-      <AppLayout title={<Skeleton className="h-6 w-48" />}>
-        <div className="w-full space-y-6 pb-8">
-          <div className="flex gap-2">
-            {[0, 1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-9 w-28 rounded-md" />
-            ))}
-          </div>
-          <div className="grid grid-cols-4 gap-4">
-            {[0, 1, 2, 3].map((i) => (
-              <Card key={i} className="px-5 py-4 space-y-2">
-                <Skeleton className="h-3 w-20" />
-                <Skeleton className="h-7 w-24" />
-              </Card>
-            ))}
-          </div>
-          <div className="grid grid-cols-4 gap-4">
-            {[0, 1, 2, 3].map((i) => (
-              <Card key={i} className="p-5 space-y-4">
-                <Skeleton className="h-4 w-32" />
-                <Skeleton className="h-7 w-24" />
-                <div className="space-y-3">
-                  <Skeleton className="h-3 w-full" />
-                  <Skeleton className="h-1.5 w-full rounded-full" />
-                  <Skeleton className="h-3 w-full" />
-                  <Skeleton className="h-1.5 w-3/4 rounded-full" />
-                  <Skeleton className="h-3 w-full" />
-                  <Skeleton className="h-1.5 w-1/2 rounded-full" />
-                </div>
-              </Card>
-            ))}
-          </div>
-          <div className="grid grid-cols-4 gap-4">
-            {[0, 1, 2, 3].map((i) => (
-              <Card key={i} className="px-5 py-4 space-y-3">
-                <div className="flex justify-between">
-                  <Skeleton className="h-3 w-20" />
-                  <Skeleton className="h-5 w-16 rounded-full" />
-                </div>
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-3 w-3/4" />
-                <Skeleton className="mt-2 h-7 w-24" />
-              </Card>
-            ))}
-          </div>
-        </div>
-      </AppLayout>
-    );
-  }
-
   if (!client) {
     return (
-      <AppLayout title="Client introuvable">
-        <div className="flex flex-1 flex-col items-center justify-center gap-4">
-          <p className="text-muted-foreground">Ce client n&apos;existe pas.</p>
-          <Button variant="outline" onClick={() => router.push("/clients")}>
-            Retour à la liste
-          </Button>
-        </div>
-      </AppLayout>
+      <div className="min-h-screen w-full bg-background flex flex-col items-center justify-center gap-4">
+        <p className="text-muted-foreground">Ce client n&apos;existe pas.</p>
+        <Button variant="outline" onClick={() => router.push("/clients")}>
+          Retour à la liste
+        </Button>
+      </div>
     );
   }
 
@@ -1501,119 +1342,120 @@ export default function ClientDetailPage({
   const categoryAnalysis = buildCategoryAnalysis(client.formData, data, diagnostic);
 
   return (
-    <AppLayout
-      title={
-        <span className="flex items-center gap-2">
-          <Link href="/clients" className="text-muted-foreground hover:text-foreground transition-colors">
-            <ArrowLeft className="size-5" />
-          </Link>
-          {displayName}
-        </span>
-      }
-      subtitle={
-        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-          <Separator orientation="vertical" className="!h-3" />
-          <span className="flex items-center gap-1">
-            <CalendarDays className="size-3" />
-            Ajouté le {diagDate}
-          </span>
-          <Separator orientation="vertical" className="!h-3" />
-          <span className="flex items-center gap-1">
-            <Phone className="size-3" />
-            {client.phone}
-          </span>
-          <Separator orientation="vertical" className="!h-3" />
-          <span className="flex items-center gap-1">
-            <Mail className="size-3" />
-            {client.email}
-          </span>
-          <Separator orientation="vertical" className="!h-3" />
-          <span className="flex items-center gap-1">
-            <User className="size-3" />
-            {advisorName}
-          </span>
-        </div>
-      }
-      actions={
-        <div className="flex items-center gap-2">
-          <Button variant="outline">Modifier</Button>
-          <Button variant="outline" size="icon">
-            <Ellipsis className="size-4" />
-          </Button>
-        </div>
-      }
-      hideIcons
-    >
-      <div className="w-full space-y-8 pb-8">
-        {/* ── Tabs ────────────────────────────────────────────── */}
-        <Tabs defaultValue="overview" onValueChange={setActiveTab}>
-          <div className="flex items-center justify-between">
-            <TabsList className="gap-2">
-              <TabsTrigger value="overview">Synthèse</TabsTrigger>
-              <TabsTrigger value="objectifs">Objectifs</TabsTrigger>
-              <TabsTrigger value="diagnostique">Diagnostique</TabsTrigger>
-              <TabsTrigger value="preconisations">Préconisations</TabsTrigger>
-            </TabsList>
-            {activeTab === "objectifs" && (
-              <Button size="sm" className="bg-[#0052CC] text-white hover:bg-[#0052CC]/90" onClick={() => setAddObjectifOpen(true)}>
-                <Plus className="size-3.5 mr-1" />
-                Ajouter
+    <div className="min-h-screen w-full bg-background">
+      <div className="flex min-h-screen flex-col">
+    <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-1 flex-col">
+      <header className="sticky top-0 z-30 shrink-0 border-b bg-background">
+        <div className="flex h-16 items-center gap-2 px-8 xl:pr-[532px]">
+          <div className="flex flex-1 items-center justify-between">
+            <div className="flex items-center gap-1.5 text-[14px] font-semibold">
+              <Link href="/clients" className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors">
+                <ArrowLeft className="size-4" />
+                Clients
+              </Link>
+              <span className="text-muted-foreground">/</span>
+              <span>{displayName}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              {activeTab === "objectifs" && (
+                <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => setAddObjectifOpen(true)}>
+                  <Plus className="size-3.5 mr-1" />
+                  Ajouter
+                </Button>
+              )}
+              <Button variant="outline">Modifier</Button>
+              <Button variant="outline" size="icon">
+                <Ellipsis className="size-4" />
               </Button>
-            )}
+            </div>
           </div>
+        </div>
+        <div className="px-8 xl:pr-[532px]">
+          <div className="flex items-center gap-3 pt-1 pb-6">
+            <h1 className="text-2xl font-semibold text-foreground">{displayName}</h1>
+            <span className="h-5 w-px bg-border" />
+            <span className="flex items-center gap-1 text-[13px] text-muted-foreground">
+              <Mail className="size-3.5 shrink-0" />
+              {client.email}
+            </span>
+            <span className="h-5 w-px bg-border" />
+            <span className="flex items-center gap-1 text-[13px] text-muted-foreground">
+              <Phone className="size-3.5 shrink-0" />
+              {client.phone}
+            </span>
+            <span className="h-5 w-px bg-border" />
+            <span className="flex items-center gap-1 text-[13px] text-muted-foreground">
+              <User className="size-3.5 shrink-0" />
+              {advisorName}
+            </span>
+          </div>
+        </div>
+        <div className="px-8 xl:pr-[532px]">
+          <TabsList variant="line" className="gap-4 -mb-px">
+            <TabsTrigger value="overview">Synthèse</TabsTrigger>
+            <TabsTrigger value="objectifs">Objectifs</TabsTrigger>
+            <TabsTrigger value="diagnostique">Diagnostique</TabsTrigger>
+            <TabsTrigger value="preconisations">Préconisations</TabsTrigger>
+          </TabsList>
+        </div>
+      </header>
+      <div className="flex-1 overflow-auto">
+        <div className="px-8 pt-4 pb-6 xl:pr-[532px]">
+          <div className="min-w-0 space-y-4 pb-8">
 
-          <TabsContent value="overview" className="mt-6 space-y-6">
-            <div className="mb-6">
-              <h3 className="text-[18px] font-semibold text-foreground">Synthèse patrimoniale</h3>
-              <p className="text-sm text-muted-foreground">Vue d&apos;ensemble du patrimoine et du profil client.</p>
-            </div>
+          <TabsContent value="overview" className="space-y-4">
             {/* ── KPI row ──────────────────────────── */}
-            <div className="grid grid-cols-4 gap-4">
-              <Card className="px-5 py-4">
-                <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-                  <Wallet className="size-3.5" />
-                  Total Actifs
-                </div>
-                <p className="mt-1 text-2xl font-bold">{fmt(data.actifs.total)}</p>
+            <div className="grid grid-cols-12 gap-3">
+              <Card size="sm" className="col-span-6 sm:col-span-3">
+                <CardHeader>
+                  <CardDescription className="flex items-center gap-2">
+                    <Wallet className="size-3.5" />
+                    Total Actifs
+                  </CardDescription>
+                  <CardTitle className="text-[16px] group-data-[size=sm]/card:text-[16px] font-bold tabular-nums">{fmt(data.actifs.total)}</CardTitle>
+                </CardHeader>
               </Card>
-              <Card className="px-5 py-4">
-                <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-                  <CreditCard className="size-3.5" />
-                  Total Passifs
-                </div>
-                <p className="mt-1 text-2xl font-bold">{fmt(data.passifs.total)}</p>
+              <Card size="sm" className="col-span-6 sm:col-span-3">
+                <CardHeader>
+                  <CardDescription className="flex items-center gap-2">
+                    <CreditCard className="size-3.5" />
+                    Total Passifs
+                  </CardDescription>
+                  <CardTitle className="text-[16px] group-data-[size=sm]/card:text-[16px] font-bold tabular-nums">{fmt(data.passifs.total)}</CardTitle>
+                </CardHeader>
               </Card>
-              <Card className="px-5 py-4">
-                <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-                  <Landmark className="size-3.5" />
-                  Patrimoine net
-                </div>
-                <p className="mt-1 text-2xl font-bold">{fmt(data.patrimoine)}</p>
+              <Card size="sm" className="col-span-6 sm:col-span-3">
+                <CardHeader>
+                  <CardDescription className="flex items-center gap-2">
+                    <Landmark className="size-3.5" />
+                    Patrimoine net
+                  </CardDescription>
+                  <CardTitle className="text-[16px] group-data-[size=sm]/card:text-[16px] font-bold tabular-nums">{fmt(data.patrimoine)}</CardTitle>
+                </CardHeader>
               </Card>
-              <Card className="px-5 py-4">
-                <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-                  <Banknote className="size-3.5" />
-                  Revenus annuels
-                </div>
-                <p className="mt-1 text-2xl font-bold">{fmt(data.revenus.total)}</p>
+              <Card size="sm" className="col-span-6 sm:col-span-3">
+                <CardHeader>
+                  <CardDescription className="flex items-center gap-2">
+                    <Banknote className="size-3.5" />
+                    Revenus annuels
+                  </CardDescription>
+                  <CardTitle className="text-[16px] group-data-[size=sm]/card:text-[16px] font-bold tabular-nums">{fmt(data.revenus.total)}</CardTitle>
+                </CardHeader>
               </Card>
             </div>
 
-            {/* ── Row 2: Répartition | Actifs immobiliers | Épargne | Radar ── */}
-            <div className="grid grid-cols-4 items-stretch gap-4">
-              {/* Répartition du patrimoine */}
-              <PatrimoinePieChart data={data} />
-
+            {/* ── Row 2: Actifs immobiliers | Épargne & Prévoyance ── */}
+            <div className="grid grid-cols-12 items-stretch gap-4">
               {/* Actifs immobiliers */}
-              <Card>
-                <CardHeader className="pb-0">
-                  <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+              <Card className="col-span-12 xl:col-span-6">
+                <CardHeader>
+                  <CardDescription className="flex items-center gap-2">
                     <Home className="size-3.5" />
                     Actifs immobiliers
-                  </div>
-                  <p className="mt-2 text-2xl font-bold">{fmt(data.actifs.immobilier.total)}</p>
+                  </CardDescription>
+                  <CardTitle className="text-2xl font-bold tabular-nums">{fmt(data.actifs.immobilier.total)}</CardTitle>
                 </CardHeader>
-                <CardContent className="text-sm" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                <CardContent className="flex flex-col gap-5 text-sm">
                   <div className="space-y-1">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Biens d&apos;usage</span>
@@ -1645,15 +1487,15 @@ export default function ClientDetailPage({
               </Card>
 
               {/* Épargne & Prévoyance */}
-              <Card>
-                <CardHeader className="pb-0">
-                  <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+              <Card className="col-span-12 xl:col-span-6">
+                <CardHeader>
+                  <CardDescription className="flex items-center gap-2">
                     <PiggyBank className="size-3.5" />
                     Épargne & Prévoyance
-                  </div>
-                  <p className="mt-2 text-2xl font-bold">{fmt(data.actifs.epargne.total)}</p>
+                  </CardDescription>
+                  <CardTitle className="text-2xl font-bold tabular-nums">{fmt(data.actifs.epargne.total)}</CardTitle>
                 </CardHeader>
-                <CardContent className="text-sm" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                <CardContent className="flex flex-col gap-5 text-sm">
                   <div className="space-y-1">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Disponibilités</span>
@@ -1692,29 +1534,31 @@ export default function ClientDetailPage({
                   </div>
                 </CardContent>
               </Card>
+            </div>
 
+            {/* ── Row 3: Radar client | Passifs ── */}
+            <div className="grid grid-cols-12 items-stretch gap-4">
               {/* Radar client */}
-              <Card className="flex flex-col">
+              <Card className="col-span-12 xl:col-span-6 flex flex-col">
                 <CardHeader className="items-center pb-2">
-                  <CardTitle className="flex items-center gap-2 text-sm">
-                    <Sparkles className="size-4" />
+                  <CardDescription className="flex items-center gap-2">
+                    <Sparkles className="size-3.5" />
                     Radar client
-                  </CardTitle>
-                  <CardDescription className="text-xs text-center">Évaluation multidimensionnelle de la maturité patrimoniale du client.</CardDescription>
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="flex-1 pb-2">
                   <ChartContainer
                     config={{
                       score: { label: "Score", color: "var(--chart-1)" },
                     } satisfies ChartConfig}
-                    className="mx-auto aspect-square max-h-[300px]"
+                    className="mx-auto h-full w-full"
                   >
-                    <RadarChart data={Object.entries(diagnostic.maturity).map(([subject, score]) => ({ subject, score }))} outerRadius="65%">
+                    <RadarChart data={Object.entries(diagnostic.maturity).map(([subject, score]) => ({ subject, score }))} outerRadius="80%">
                       <ChartTooltip
                         cursor={false}
                         content={<ChartTooltipContent indicator="line" />}
                       />
-                      <PolarAngleAxis dataKey="subject" tick={{ fontSize: 10 }} />
+                      <PolarAngleAxis dataKey="subject" tick={{ fontSize: 12 }} />
                       <PolarGrid radialLines={false} />
                       <Radar
                         dataKey="score"
@@ -1725,105 +1569,89 @@ export default function ClientDetailPage({
                       />
                     </RadarChart>
                   </ChartContainer>
-                  <p className="mt-1 flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground">
-                    <span className="size-2.5 rounded-full bg-chart-1" />
-                    État du patrimoine
-                  </p>
                 </CardContent>
-              </Card>
-            </div>
-
-            {/* ── Row 3: Passifs | Revenus | Situation+Composition | Score ── */}
-            <div className="grid grid-cols-4 items-stretch gap-4">
-              {/* Passifs */}
-              <Card className="flex flex-col">
-                <CardHeader className="pb-0">
-                  <CardTitle className="flex items-center gap-2 text-sm">
-                    <Shield className="size-4" />
-                    Passifs
-                  </CardTitle>
-                  <CardDescription className="text-xs">{fmt(data.passifs.total)}</CardDescription>
-                </CardHeader>
-                <CardContent className="flex flex-1 flex-col items-center justify-center pb-2">
-                  <ChartContainer
-                    config={{
-                      pretImmo: { label: "Prêt immobilier", color: "var(--chart-1)" },
-                      pretPro: { label: "Prêt professionnel", color: "var(--chart-3)" },
-                      autresPrets: { label: "Autres prêts", color: "var(--chart-5)" },
-                    } satisfies ChartConfig}
-                    className="mx-auto h-[160px] w-full"
-                  >
-                    <RadialBarChart
-                      data={[{
-                        pretImmo: data.passifs.pretImmo,
-                        pretPro: data.passifs.pretPro,
-                        autresPrets: data.passifs.autresPrets,
-                      }]}
-                      endAngle={180}
-                      innerRadius={80}
-                      outerRadius={110}
-                      cy="70%"
-                    >
-                      <RadialBar dataKey="autresPrets" fill="var(--chart-5)" stackId="a" cornerRadius={5} className="stroke-transparent stroke-2" />
-                      <RadialBar dataKey="pretPro" fill="var(--chart-3)" stackId="a" cornerRadius={5} className="stroke-transparent stroke-2" />
-                      <RadialBar dataKey="pretImmo" fill="var(--chart-1)" stackId="a" cornerRadius={5} className="stroke-transparent stroke-2" />
-                      <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
-                      <PolarRadiusAxis tick={false} tickLine={false} axisLine={false}>
-                        <Label
-                          content={({ viewBox }) => {
-                            if (viewBox && "cx" in viewBox && "cy" in viewBox) {
-                              return (
-                                <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle">
-                                  <tspan
-                                    x={viewBox.cx}
-                                    y={(viewBox.cy || 0) - 16}
-                                    className="fill-foreground text-2xl font-bold"
-                                  >
-                                    {fmt(data.passifs.total)}
-                                  </tspan>
-                                  <tspan
-                                    x={viewBox.cx}
-                                    y={(viewBox.cy || 0) + 4}
-                                    className="fill-muted-foreground text-xs"
-                                  >
-                                    Total passifs
-                                  </tspan>
-                                </text>
-                              );
-                            }
-                          }}
-                        />
-                      </PolarRadiusAxis>
-                    </RadialBarChart>
-                  </ChartContainer>
-                  <div className="mt-auto flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs">
-                    <span className="flex items-center gap-1.5">
-                      <span className="size-2.5 rounded-full" style={{ background: "var(--chart-1)" }} />
-                      <span className="text-muted-foreground">Prêt immobilier</span>
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                      <span className="size-2.5 rounded-full" style={{ background: "var(--chart-3)" }} />
-                      <span className="text-muted-foreground">Prêt professionnel</span>
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                      <span className="size-2.5 rounded-full" style={{ background: "var(--chart-5)" }} />
-                      <span className="text-muted-foreground">Autres prêts</span>
-                    </span>
-                  </div>
-                </CardContent>
+                <CardFooter className="justify-center gap-1.5 text-xs text-muted-foreground">
+                  <span className="size-2 rounded-[2px] bg-chart-1" />
+                  État du patrimoine
+                </CardFooter>
               </Card>
 
-              {/* Revenus & Charges */}
-              <RevenusWaterfallChart data={data} />
+              {/* Situation personnelle + Composition familiale + Score patrimonial */}
+              <div className="col-span-12 xl:col-span-6 flex flex-col gap-4">
+                {/* Score patrimonial */}
+                <Card size="sm">
+                  <CardHeader>
+                    <CardDescription className="flex items-center gap-2">
+                      <Sparkles className="size-3.5" />
+                      Score patrimonial
+                    </CardDescription>
+                    <CardAction>
+                      <Badge
+                        variant="outline"
+                        className={
+                          diagnostic.globalScore >= 70
+                            ? "border-green-500/30 bg-green-500/10 text-green-500"
+                            : diagnostic.globalScore >= 50
+                              ? "border-yellow-500/30 bg-yellow-500/10 text-yellow-500"
+                              : "border-red-500/30 bg-red-500/10 text-red-500"
+                        }
+                      >
+                        {diagnostic.globalScore >= 70 ? "Patrimoine sain" : diagnostic.globalScore >= 50 ? "À optimiser" : "Actions urgentes"}
+                      </Badge>
+                    </CardAction>
+                  </CardHeader>
+                  <CardContent className="pb-4">
+                    {/* Score number */}
+                    <div className="flex items-baseline gap-1 mb-4">
+                      <span className="text-3xl font-bold text-foreground">{diagnostic.globalScore}</span>
+                      <span className="text-sm text-muted-foreground">/ 100</span>
+                    </div>
 
-              {/* Situation personnelle + Composition familiale */}
-              <div className="flex flex-col gap-4">
-                <Card className="px-4 py-3">
-                  <div className="flex items-center gap-2 text-sm font-semibold mb-3">
-                    <User className="size-4" />
-                    Situation personnelle
-                  </div>
-                  <div className="space-y-2 text-sm">
+                    {/* Bullet chart */}
+                    <div className="relative h-3 w-full rounded-md overflow-hidden">
+                      {/* Background zones: red | amber | green */}
+                      <div className="absolute inset-0 flex">
+                        <div className="h-full bg-red-200 dark:bg-red-900/40" style={{ width: "33%" }} />
+                        <div className="h-full bg-amber-200 dark:bg-amber-900/40" style={{ width: "34%" }} />
+                        <div className="h-full bg-green-200 dark:bg-green-900/40" style={{ width: "33%" }} />
+                      </div>
+                      {/* Score bar */}
+                      <div
+                        className={`absolute top-0.5 bottom-0.5 left-0 rounded-sm ${
+                          diagnostic.globalScore >= 70 ? "bg-green-500" : diagnostic.globalScore >= 50 ? "bg-amber-500" : "bg-red-500"
+                        }`}
+                        style={{ width: `${diagnostic.globalScore}%` }}
+                      />
+                      {/* Target marker at 70 */}
+                      <div className="absolute top-0 bottom-0 w-0.5 bg-foreground/40" style={{ left: "70%" }} />
+                    </div>
+
+                    {/* Labels */}
+                    <div className="flex justify-between mt-2 text-[10px] text-muted-foreground">
+                      <span>Critique</span>
+                      <span>À optimiser</span>
+                      <span>Sain</span>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card size="sm">
+                  <CardHeader>
+                    <CardDescription className="flex items-center gap-2">
+                      <User className="size-3.5" />
+                      Situation personnelle
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Âge</span>
+                      <span className="font-medium">
+                        {client.formData.situationPersonnelle.dateNaissance
+                          ? `${new Date().getFullYear() - new Date(client.formData.situationPersonnelle.dateNaissance).getFullYear()} ans`
+                          : "—"}
+                      </span>
+                    </div>
+                    <Separator />
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">CSP</span>
                       <span className="font-medium">{data.csp}</span>
@@ -1838,15 +1666,17 @@ export default function ClientDetailPage({
                       <span className="text-muted-foreground">Situation</span>
                       <span className="font-medium">{data.situation}</span>
                     </div>
-                  </div>
+                  </CardContent>
                 </Card>
 
-                <Card className="flex-1 px-4 py-3">
-                  <div className="flex items-center gap-2 text-sm font-semibold mb-3">
-                    <Users className="size-4" />
-                    Composition familiale
-                  </div>
-                  <div className="space-y-2 text-sm">
+                <Card size="sm" className="flex-1">
+                  <CardHeader>
+                    <CardDescription className="flex items-center gap-2">
+                      <Users className="size-3.5" />
+                      Composition familiale
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Partenaire</span>
                       <span className="font-medium">{data.hasPartner ? "Oui" : "Non"}</span>
@@ -1901,90 +1731,118 @@ export default function ClientDetailPage({
                         <span className="font-medium">{data.nbEnfants}</span>
                       </div>
                     </div>
-                  </div>
+                  </CardContent>
                 </Card>
               </div>
-
-              {/* Score patrimonial */}
-              <Card className="flex flex-col">
-                <CardHeader className="flex flex-row items-center justify-between pb-0">
-                  <CardTitle className="flex items-center gap-2 text-sm">
-                    <Sparkles className="size-4" />
-                    Score patrimonial
-                  </CardTitle>
-                  <Badge
-                    variant="outline"
-                    className={
-                      diagnostic.globalScore >= 70
-                        ? "border-green-500/30 bg-green-500/10 text-green-500"
-                        : diagnostic.globalScore >= 50
-                          ? "border-yellow-500/30 bg-yellow-500/10 text-yellow-500"
-                          : "border-red-500/30 bg-red-500/10 text-red-500"
-                    }
-                  >
-                    {diagnostic.globalScore >= 70 ? "Patrimoine sain" : diagnostic.globalScore >= 50 ? "À optimiser" : "Actions urgentes"}
-                  </Badge>
+            </div>
+            <div className="grid grid-cols-12 items-stretch gap-4">
+              {/* Passifs */}
+              <Card className="col-span-12 xl:col-span-6 flex flex-col">
+                <CardHeader className="pb-0">
+                  <CardDescription className="flex items-center gap-2">
+                    <Shield className="size-3.5" />
+                    Passifs
+                  </CardDescription>
+                  <CardTitle className="text-2xl font-bold tabular-nums">{fmt(data.passifs.total)}</CardTitle>
                 </CardHeader>
-                <p className="px-4 text-xs text-muted-foreground mt-1">Indicateur global de santé patrimoniale basé sur 6 critères clés.</p>
-                <CardContent className="flex flex-1 flex-col justify-center pb-4 pt-6">
-                  {/* Score number */}
-                  <div className="flex items-baseline gap-1 mb-4">
-                    <span className="text-3xl font-bold text-foreground">{diagnostic.globalScore}</span>
-                    <span className="text-sm text-muted-foreground">/ 100</span>
-                  </div>
-
-                  {/* Bullet chart */}
-                  <div className="relative h-6 w-full rounded-md overflow-hidden">
-                    {/* Background zones: red | amber | green */}
-                    <div className="absolute inset-0 flex">
-                      <div className="h-full bg-red-200 dark:bg-red-900/40" style={{ width: "33%" }} />
-                      <div className="h-full bg-amber-200 dark:bg-amber-900/40" style={{ width: "34%" }} />
-                      <div className="h-full bg-green-200 dark:bg-green-900/40" style={{ width: "33%" }} />
-                    </div>
-                    {/* Score bar */}
-                    <div
-                      className={`absolute top-1 bottom-1 left-0 rounded-sm ${
-                        diagnostic.globalScore >= 70 ? "bg-green-500" : diagnostic.globalScore >= 50 ? "bg-amber-500" : "bg-red-500"
-                      }`}
-                      style={{ width: `${diagnostic.globalScore}%` }}
-                    />
-                    {/* Target marker at 70 */}
-                    <div className="absolute top-0 bottom-0 w-0.5 bg-foreground/40" style={{ left: "70%" }} />
-                  </div>
-
-                  {/* Labels */}
-                  <div className="flex justify-between mt-2 text-[10px] text-muted-foreground">
-                    <span>Critique</span>
-                    <span>À optimiser</span>
-                    <span>Sain</span>
-                  </div>
+                <CardContent className="flex flex-1 flex-col items-center justify-center pb-2">
+                  <ChartContainer
+                    config={{
+                      pretImmo: { label: "Prêt immobilier", color: "var(--chart-1)" },
+                      pretPro: { label: "Prêt professionnel", color: "var(--chart-3)" },
+                      autresPrets: { label: "Autres prêts", color: "var(--chart-5)" },
+                    } satisfies ChartConfig}
+                    className="mx-auto h-[160px] w-full"
+                  >
+                    <RadialBarChart
+                      data={[{
+                        pretImmo: data.passifs.pretImmo,
+                        pretPro: data.passifs.pretPro,
+                        autresPrets: data.passifs.autresPrets,
+                      }]}
+                      endAngle={180}
+                      innerRadius={80}
+                      outerRadius={110}
+                      cy="70%"
+                    >
+                      <RadialBar dataKey="autresPrets" fill="var(--chart-5)" stackId="a" cornerRadius={5} className="stroke-transparent stroke-2" />
+                      <RadialBar dataKey="pretPro" fill="var(--chart-3)" stackId="a" cornerRadius={5} className="stroke-transparent stroke-2" />
+                      <RadialBar dataKey="pretImmo" fill="var(--chart-1)" stackId="a" cornerRadius={5} className="stroke-transparent stroke-2" />
+                      <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
+                      <PolarRadiusAxis tick={false} tickLine={false} axisLine={false}>
+                        <Label
+                          content={({ viewBox }) => {
+                            if (viewBox && "cx" in viewBox && "cy" in viewBox) {
+                              return (
+                                <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle">
+                                  <tspan
+                                    x={viewBox.cx}
+                                    y={(viewBox.cy || 0) - 16}
+                                    className="fill-foreground text-2xl font-bold"
+                                  >
+                                    {fmt(data.passifs.total)}
+                                  </tspan>
+                                  <tspan
+                                    x={viewBox.cx}
+                                    y={(viewBox.cy || 0) + 4}
+                                    className="fill-muted-foreground text-xs"
+                                  >
+                                    Total passifs
+                                  </tspan>
+                                </text>
+                              );
+                            }
+                          }}
+                        />
+                      </PolarRadiusAxis>
+                    </RadialBarChart>
+                  </ChartContainer>
                 </CardContent>
+                <CardFooter className="flex-wrap justify-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1.5">
+                    <span className="size-2 rounded-[2px] bg-chart-1" />
+                    Prêt immobilier
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="size-2 rounded-[2px] bg-chart-3" />
+                    Prêt professionnel
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="size-2 rounded-[2px] bg-chart-5" />
+                    Autres prêts
+                  </span>
+                </CardFooter>
               </Card>
+
+              {/* Revenus & Charges */}
+              <RevenusWaterfallChart data={data} className="col-span-12 xl:col-span-6" />
             </div>
 
-            {/* ── Row 4: Analyse prioritaire (neutral cards) ──── */}
-            <div className="grid grid-cols-4 gap-4">
+            {/* ── Row 5: Analyse prioritaire ──── */}
+            <div className="grid grid-cols-12 gap-4">
               {categoryAnalysis
                 .flatMap((cat) => cat.items.map((item) => ({ ...item, category: cat.category })))
                 .slice(0, 4)
                 .map((item) => (
-                  <Card key={item.title} className="flex flex-col justify-between px-5 py-4">
-                    <div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-muted-foreground">{item.category}</span>
+                  <Card key={item.title} className="col-span-12 xl:col-span-6 flex flex-col justify-between">
+                    <CardHeader>
+                      <CardDescription>{item.category}</CardDescription>
+                      <CardTitle className="text-sm">{item.title}</CardTitle>
+                      <CardAction>
                         <Badge variant="outline" className={cn("text-[10px]", statusStyle(item.status))}>
                           {item.status}
                         </Badge>
-                      </div>
-                      <p className="mt-2 text-sm font-semibold">{item.title}</p>
-                      <p className="mt-1 text-xs text-muted-foreground leading-relaxed line-clamp-2">
+                      </CardAction>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
                         {item.description}
                       </p>
-                    </div>
-                    <div className="mt-4 border-t pt-3">
-                      <p className="text-2xl font-bold">{item.metric}</p>
+                    </CardContent>
+                    <CardFooter className="flex-col items-start">
+                      <p className="text-2xl font-bold tabular-nums">{item.metric}</p>
                       <p className="text-xs text-muted-foreground">{item.metricLabel}</p>
-                    </div>
+                    </CardFooter>
                   </Card>
                 ))}
             </div>
@@ -1992,19 +1850,28 @@ export default function ClientDetailPage({
 
           <ObjectifsContent addOpen={addObjectifOpen} setAddOpen={setAddObjectifOpen} />
 
-          <TabsContent value="diagnostique" className="mt-6">
-            <div className="mb-6">
-              <h3 className="text-[18px] font-semibold text-foreground">Diagnostic patrimonial du client</h3>
-              <p className="text-sm text-muted-foreground">Évaluation globale de la situation patrimoniale du client, avec scoring par domaine et points d&apos;attention identifiés.</p>
-            </div>
+          <TabsContent value="diagnostique">
             <DiagnostiqueContent categoryAnalysis={categoryAnalysis} />
           </TabsContent>
 
           <PreconisationsContent />
-        </Tabs>
 
-        <AdvisorCopilot client={advisorClient} />
+          </div>
+        </div>
       </div>
-    </AppLayout>
+
+      {/* Fixed right rail: Copilot patrimonial */}
+      <aside className="fixed right-0 top-0 z-40 hidden h-screen w-[500px] border-l bg-background xl:flex xl:flex-col">
+        <div className="min-h-0 flex-1">
+          <ConversationProvider
+            onError={(message) => console.error("[Copilot]", message)}
+          >
+            <AdvisorCopilot client={advisorClient} />
+          </ConversationProvider>
+        </div>
+      </aside>
+    </Tabs>
+      </div>
+    </div>
   );
 }

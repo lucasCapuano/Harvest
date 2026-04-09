@@ -257,11 +257,8 @@ const initialClients: Client[] = [
   { id: 4, firstName: "Sophie", lastName: "Bernard", email: "s.bernard@email.fr", phone: "06 45 67 89 01", type: "Particulier", status: "Prospect" },
   { id: 5, firstName: "Antoine", lastName: "Moreau", email: "a.moreau@cabinet.fr", phone: "06 56 78 90 12", type: "Professionnel", status: "Actif" },
   { id: 6, firstName: "Claire", lastName: "Petit", email: "c.petit@email.fr", phone: "06 67 89 01 23", type: "Particulier", status: "Inactif" },
-  { id: 7, firstName: "François", lastName: "Robert", email: "f.robert@email.fr", phone: "06 78 90 12 34", type: "Particulier", status: "Actif" },
   { id: 8, firstName: "Isabelle", lastName: "Durand", email: "i.durand@groupe.fr", phone: "06 89 01 23 45", type: "Professionnel", status: "Prospect" },
   { id: 9, firstName: "Nicolas", lastName: "Leroy", email: "n.leroy@email.fr", phone: "06 90 12 34 56", type: "Particulier", status: "Actif" },
-  { id: 10, firstName: "Catherine", lastName: "Roux", email: "c.roux@email.fr", phone: "06 01 23 45 67", type: "Particulier", status: "Actif" },
-  { id: 11, firstName: "Éric", lastName: "Girard", email: "e.girard@entreprise.fr", phone: "06 11 22 33 44", type: "Professionnel", status: "Actif" },
   { id: 12, firstName: "Valérie", lastName: "Lefebvre", email: "v.lefebvre@email.fr", phone: "06 55 66 77 88", type: "Particulier", status: "Prospect" },
   { id: 13, firstName: "Henri", lastName: "Beaumont", email: "h.beaumont@email.fr", phone: "06 42 18 73 95", type: "Particulier", status: "Actif" },
 ].map((c) => ({

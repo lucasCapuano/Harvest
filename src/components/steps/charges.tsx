@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { useWizard } from "@/lib/wizard-context";
+import { useClients } from "@/lib/clients-store";
 import { AccordionCategory, type FieldConfig, type RowData } from "@/components/accordion-category";
 import { StepNavigation } from "@/components/step-navigation";
 import { StepHeader } from "@/components/step-header";
@@ -13,9 +15,8 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-  DialogClose,
 } from "@/components/ui/dialog";
-import { CheckCircle2, ArrowLeft } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 
 let nextId = 300;
 function genId() { return String(nextId++); }
@@ -49,10 +50,26 @@ const fields: FieldConfig[] = [
 
 export function ChargesStep() {
   const { formData } = useWizard();
+  const { addClient } = useClients();
+  const router = useRouter();
 
   const generales = useCategoryRows(undefined, formData.charges.chargesGenerales);
   const deductibles = useCategoryRows(undefined, formData.charges.chargesDeductibles);
   const [showConfirm, setShowConfirm] = useState(false);
+
+  function handleSave() {
+    const sp = formData.situationPersonnelle;
+    addClient({
+      firstName: sp.prenom || "Nouveau",
+      lastName: sp.nom || "Client",
+      email: sp.email || "",
+      phone: sp.telephone || "",
+      type: "Particulier",
+      status: "Prospect",
+      formData: formData as Parameters<typeof addClient>[0]["formData"],
+    });
+    setShowConfirm(true);
+  }
 
   return (
     <div>
@@ -69,7 +86,7 @@ export function ChargesStep() {
 
       {/* CTA — Ajouter le KYC */}
       <div className="mt-6 flex justify-end">
-        <Button size="lg" onClick={() => setShowConfirm(true)}>
+        <Button size="lg" onClick={handleSave}>
           Ajouter le KYC dans Harvest
         </Button>
       </div>
@@ -89,14 +106,8 @@ export function ChargesStep() {
             </div>
           </DialogHeader>
           <DialogFooter>
-            <DialogClose
-              render={
-                <Button variant="outline" className="gap-2">
-                  <ArrowLeft className="size-4" />
-                  Retour
-                </Button>
-              }
-            />
+            <Button variant="outline" onClick={() => setShowConfirm(false)}>Retour</Button>
+            <Button onClick={() => router.push("/clients")}>Voir mes clients</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

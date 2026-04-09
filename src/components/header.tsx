@@ -52,7 +52,7 @@ export function Header() {
         <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={() => router.push("/clients")}>
           Abandonner
         </Button>
-        <Button size="sm" className="bg-[#0052CC] text-white transition-all hover:bg-[#0052CC]/90" onClick={handleCreateClient}>
+        <Button size="sm" className="bg-primary text-primary-foreground transition-all hover:bg-primary/90" onClick={handleCreateClient}>
           Créer le dossier
         </Button>
       </div>

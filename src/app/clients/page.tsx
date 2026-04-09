@@ -169,7 +169,7 @@ function ClientActions({ client }: { client: Client }) {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditOpen(false)}>Annuler</Button>
-            <Button className="bg-[#0052CC] text-white transition-all hover:bg-[#0052CC]/90" onClick={handleSave}>Enregistrer</Button>
+            <Button className="bg-primary text-primary-foreground transition-all hover:bg-primary/90" onClick={handleSave}>Enregistrer</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -272,7 +272,10 @@ export default function ClientsPage() {
 
   if (loading) {
     return (
-      <AppLayout title={<Skeleton className="h-6 w-24" />}>
+      <AppLayout
+        title="Clients"
+        titleAction={<Skeleton className="h-7 w-32 rounded-lg" />}
+      >
         <div className="mb-6 grid grid-cols-4 gap-4">
           {[0, 1, 2, 3].map((i) => (
             <Card key={i} className="p-4 space-y-2">
@@ -281,16 +284,16 @@ export default function ClientsPage() {
             </Card>
           ))}
         </div>
-        <div className="mb-6 flex items-center justify-between">
-          <Skeleton className="h-9 w-64 rounded-md" />
-          <div className="flex gap-2">
-            <Skeleton className="h-9 w-20 rounded-md" />
-            <Skeleton className="h-7 w-32 rounded-md" />
+        <div className="mb-6 flex items-center justify-between gap-4">
+          <Skeleton className="h-9 max-w-sm flex-1 rounded-md" />
+          <div className="flex items-center rounded-lg border bg-muted/50 p-0.5 gap-0.5">
+            <Skeleton className="size-7 rounded-md" />
+            <Skeleton className="size-7 rounded-md" />
           </div>
         </div>
-        <Card className="overflow-hidden">
+        <Card className="overflow-hidden py-2">
           <div className="border-b px-4 py-3 flex gap-4">
-            {[0, 1, 2, 3, 4, 5, 6].map((i) => (
+            {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
               <Skeleton key={i} className="h-4 flex-1" />
             ))}
           </div>
@@ -302,7 +305,9 @@ export default function ClientsPage() {
               <Skeleton className="h-4 flex-1" />
               <Skeleton className="h-4 w-24" />
               <Skeleton className="h-5 w-16 rounded-full" />
+              <Skeleton className="h-5 w-16 rounded-full" />
               <Skeleton className="h-4 w-20" />
+              <Skeleton className="size-7 rounded-md" />
             </div>
           ))}
         </Card>
@@ -372,7 +377,7 @@ export default function ClientsPage() {
         setTranscriptOpen(false);
         setTranscriptFile(null);
         setAnalysisDone(false);
-        router.push("/?mode=transcript");
+        router.push("/clients/new?mode=transcript");
       }, 800);
     }, 2500);
   };
@@ -386,7 +391,18 @@ export default function ClientsPage() {
   };
 
   return (
-    <AppLayout title="Clients">
+    <AppLayout
+      title="Clients"
+      titleAction={
+        <button
+          onClick={() => setNewClientOpen(true)}
+          className="inline-flex h-7 w-fit shrink-0 items-center justify-center gap-1.5 rounded-[min(var(--radius-md),12px)] bg-primary px-2.5 text-[0.8rem] font-medium text-primary-foreground transition-all hover:bg-primary/90"
+        >
+          <Plus className="size-3.5" />
+          Nouveau client
+        </button>
+      }
+    >
       {/* Stats */}
       <div className="mb-6 flex gap-4">
         <Card className="flex-1 gap-1 p-4">
@@ -450,13 +466,6 @@ export default function ClientsPage() {
               <LayoutGrid className="size-4" />
             </button>
           </div>
-          <button
-            onClick={() => setNewClientOpen(true)}
-            className="inline-flex h-7 w-fit shrink-0 items-center justify-center gap-1.5 rounded-[min(var(--radius-md),12px)] bg-[#0052CC] px-2.5 text-[0.8rem] font-medium text-white transition-all hover:bg-[#0052CC]/90"
-          >
-            <Plus className="size-3.5" />
-            Nouveau client
-          </button>
         </div>
       </div>
 
@@ -471,10 +480,10 @@ export default function ClientsPage() {
           </DialogHeader>
           <div className="grid gap-3 py-2">
             <button
-              onClick={() => { setNewClientOpen(false); router.push("/"); }}
+              onClick={() => { setNewClientOpen(false); router.push("/clients/new"); }}
               className="flex items-start gap-4 rounded-lg border border-border p-4 text-left transition-colors hover:bg-muted"
             >
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[#0052CC]/10 text-[#0052CC]">
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
                 <FileText className="size-5" />
               </div>
               <div>
@@ -499,7 +508,7 @@ export default function ClientsPage() {
               </div>
             </button>
             <button
-              onClick={() => { setNewClientOpen(false); router.push("/?mode=live"); }}
+              onClick={() => { setNewClientOpen(false); router.push("/clients/new?mode=live"); }}
               className="flex items-start gap-4 rounded-lg border border-border p-4 text-left transition-colors hover:bg-muted"
             >
               <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-green-500/10 text-green-500">
@@ -523,15 +532,6 @@ export default function ClientsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-10 pl-4 align-middle">
-                    <input
-                      type="checkbox"
-                      checked={allSelected}
-                      ref={(el) => { if (el) el.indeterminate = someSelected && !allSelected; }}
-                      onChange={toggleAll}
-                      className="size-4 rounded border-input accent-primary align-middle"
-                    />
-                  </TableHead>
                   <TableHead>
                     <button onClick={() => toggleSort("name")} className="inline-flex items-center font-medium">
                       Client <SortIcon col="name" />
@@ -560,7 +560,7 @@ export default function ClientsPage() {
               <TableBody>
                 {filtered.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
+                    <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
                       Aucun client trouvé.
                     </TableCell>
                   </TableRow>
@@ -572,14 +572,6 @@ export default function ClientsPage() {
                     className="cursor-pointer"
                     onClick={() => router.push(`/clients/${client.id}`)}
                   >
-                    <TableCell className="pl-4 align-middle" onClick={(e) => e.stopPropagation()}>
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.has(client.id)}
-                        onChange={() => toggleOne(client.id)}
-                        className="size-4 rounded border-input accent-primary align-middle"
-                      />
-                    </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold">
@@ -659,7 +651,7 @@ export default function ClientsPage() {
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="flex w-full flex-col items-center gap-3 rounded-lg border-2 border-dashed border-border p-8 text-center transition-colors hover:border-[#0052CC]/50 hover:bg-muted/50"
+                className="flex w-full flex-col items-center gap-3 rounded-lg border-2 border-dashed border-border p-8 text-center transition-colors hover:border-primary/50 hover:bg-muted/50"
               >
                 <div className="flex size-12 items-center justify-center rounded-full bg-amber-500/10 text-amber-500">
                   <Upload className="size-5" />
@@ -689,7 +681,7 @@ export default function ClientsPage() {
               <DialogFooter>
                 <Button variant="outline" onClick={() => setTranscriptOpen(false)}>Annuler</Button>
                 <Button
-                  className="bg-[#0052CC] text-white transition-all hover:bg-[#0052CC]/90"
+                  className="bg-primary text-primary-foreground transition-all hover:bg-primary/90"
                   disabled={!transcriptFile}
                   onClick={handleAnalyze}
                 >
@@ -701,7 +693,7 @@ export default function ClientsPage() {
 
           {analyzing && (
             <div className="flex flex-col items-center gap-4 py-8">
-              <Loader2 className="size-8 animate-spin text-[#0052CC]" />
+              <Loader2 className="size-8 animate-spin text-primary" />
               <div className="text-center">
                 <p className="text-sm font-medium">Analyse en cours…</p>
                 <p className="text-xs text-muted-foreground mt-1">

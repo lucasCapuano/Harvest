@@ -125,32 +125,58 @@ export default function ActualitesPage() {
 
   if (loading) {
     return (
-      <AppLayout title={<Skeleton className="h-6 w-28" />}>
-        <div className="grid grid-cols-2 gap-6 mb-10">
-          <Skeleton className="h-72 rounded-xl" />
-          <div className="space-y-4">
-            {[0, 1, 2, 3].map((i) => (
-              <div key={i} className="flex gap-3">
-                <div className="flex-1 space-y-1.5">
-                  <Skeleton className="h-3 w-20" />
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-3 w-24" />
+      <AppLayout title="Actualités">
+        {/* Hero section */}
+        <div className="mb-8">
+          <Skeleton className="h-6 w-52 mb-3" />
+          <div className="grid grid-cols-2 gap-6">
+            <Skeleton className="h-72 rounded-xl" />
+            <div className="space-y-4">
+              {[0, 1, 2, 3].map((i) => (
+                <div key={i} className="flex gap-3">
+                  <div className="flex-1 space-y-1.5">
+                    <Skeleton className="h-3 w-20" />
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-3 w-24" />
+                  </div>
+                  <Skeleton className="size-16 rounded-lg" />
                 </div>
-                <Skeleton className="size-16 rounded-lg" />
-              </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        {/* Pour vous */}
+        <div className="mb-8">
+          <Skeleton className="h-6 w-32 mb-4" />
+          <div className="grid grid-cols-4 gap-5">
+            {[0, 1, 2, 3].map((i) => (
+              <Card key={i} className="p-3 space-y-2">
+                <Skeleton className="h-3 w-16" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-2/3" />
+                <Skeleton className="h-3 w-20" />
+              </Card>
             ))}
           </div>
         </div>
-        <Skeleton className="h-6 w-32 mb-4" />
-        <div className="grid grid-cols-4 gap-5">
-          {[0, 1, 2, 3].map((i) => (
-            <Card key={i} className="p-3 space-y-2">
-              <Skeleton className="h-3 w-16" />
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-2/3" />
-              <Skeleton className="h-3 w-20" />
-            </Card>
-          ))}
+        {/* Vos thèmes */}
+        <div>
+          <Skeleton className="h-6 w-36 mb-4" />
+          <div className="grid grid-cols-3 gap-6">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="space-y-3">
+                <Skeleton className="h-5 w-28" />
+                {[0, 1, 2].map((j) => (
+                  <div key={j} className="flex items-start gap-3 border-b pb-3">
+                    <div className="flex-1 space-y-1.5">
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-3 w-24" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
         </div>
       </AppLayout>
     );
@@ -172,7 +198,7 @@ export default function ActualitesPage() {
       }
     >
       {/* ── Hero section ── */}
-      <section className="mb-10">
+      <section className="mb-8">
         <div className="mb-3 flex items-center gap-2">
           <h2 className="text-[18px] font-semibold text-foreground">Les actualités du mois</h2>
         </div>
@@ -213,7 +239,7 @@ export default function ActualitesPage() {
       </section>
 
       {/* ── Pour vous ── */}
-      <section className="mb-10">
+      <section className="mb-8">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-[18px] font-semibold text-foreground">Pour vous</h2>
           <span className="text-xs text-muted-foreground">Basé sur vos centres d&apos;intérêt</span>
@@ -248,7 +274,7 @@ export default function ActualitesPage() {
       </section>
 
       {/* ── Vos thèmes ── */}
-      <section className="mb-10">
+      <section className="mb-8">
         <div className="mb-3 flex items-center gap-2">
           <h2 className="text-[18px] font-semibold text-foreground">Vos thèmes</h2>
         </div>
